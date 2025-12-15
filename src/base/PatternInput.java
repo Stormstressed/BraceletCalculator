@@ -14,14 +14,10 @@ public class PatternInput {
         return rows;
     }
 
-    public static List<String[]> fromWebpage(String urlOrId) {
-        String url = urlOrId.trim();
-
-        // If the user just typed a number, build the full URL
-        if (url.matches("\\d+")) {
-            url = "https://www.braceletbook.com/patterns/normal/" + url + "/";
-        }
-
+    public static Scraper.ScrapeResult fromWebpage(String input) {
+        String url = input.matches("\\d+")
+            ? "https://www.braceletbook.com/patterns/normal/" + input + "/"
+            : input;
         return Scraper.scrapePattern(url);
     }
 }
