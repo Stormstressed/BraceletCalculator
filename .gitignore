@@ -23,3 +23,5 @@ Thumbs.db
 *.jar
 *.war
 *.ear
+
+patterns.json
