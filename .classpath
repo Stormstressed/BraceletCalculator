@@ -5,7 +5,19 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="main/resources/css/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src/main/resources/css"/>
 	<classpathentry kind="lib" path="lib/jsoup-1.21.2.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.base.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.controls.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.fxml.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.graphics.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.media.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.swing.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.web.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx-swt.jar"/>
+	<classpathentry kind="lib" path="A:/programas/Eclipse/jackson json/jackson-annotations-2.19.4.jar"/>
+	<classpathentry kind="lib" path="A:/programas/Eclipse/jackson json/jackson-core-2.19.4.jar"/>
+	<classpathentry kind="lib" path="A:/programas/Eclipse/jackson json/jackson-databind-2.19.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

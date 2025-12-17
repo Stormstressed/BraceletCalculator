@@ -1,0 +1,20 @@
+.root {
+    -fx-base: #222;
+    -fx-background: #222;
+    -fx-text-fill: #ddd;
+}
+
+.button {
+    -fx-background-color: #444;
+    -fx-text-fill: #ddd;
+}
+
+.scroll-pane {
+    -fx-background: #222;
+    -fx-border-color: #444;
+}
+
+.combo-box, .combo-box-popup {
+    -fx-background-color: #333;
+    -fx-text-fill: #ddd;
+}

@@ -1,0 +1,97 @@
+.root {
+    -fx-background-color: #222;
+    -fx-text-fill: #ddd;
+}
+
+.button {
+    -fx-background-color: #444;
+    -fx-text-fill: #ddd;
+}
+
+.button:hover {
+    -fx-background-color: #555;
+    -fx-text-fill: #fff;        
+}
+
+.scroll-pane {
+    -fx-background-color: #222;
+    -fx-border-color: #444;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: #222;
+}
+
+.text-flow {
+    -fx-font-family: monospace;
+    -fx-background-color: #222;
+    -fx-border-color: #444;
+    -fx-border-width: 1;
+    -fx-padding: 10;
+}
+
+
+.combo-box {
+    -fx-background-color: #333;
+    -fx-text-fill: #ddd;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: #333;   /* dark background for arrow button */
+}
+
+.combo-box .arrow {
+    -fx-background-color: #ddd;   /* arrow glyph itself */
+}
+
+
+.combo-box .text-field {
+    -fx-background-color: #333;
+    -fx-text-fill: #ddd;
+}
+
+.scroll-bar {
+    -fx-background-color: #222;   /* track background */
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #444;   /* draggable thumb */
+    -fx-background-radius: 2;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #555;   /* thumb hover */
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: #333;   /* arrow buttons */
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: #ddd;   /* arrow glyph color */
+}
+
+
+.list-cell {
+    -fx-background-color: #333;
+    -fx-text-fill: #ddd;
+}
+
+.list-cell:filled:selected, .list-cell:filled:hover {
+    -fx-background-color: #555;
+    -fx-text-fill: #fff;
+}
+
+/* base first */
+.status-light {
+    -fx-font-weight: bold;
+    -fx-text-fill: #ddd; /* base color */
+}
+
+/* states after base; each increases specificity */
+.status-light.loading { -fx-text-fill: orange; }
+.status-light.ok      { -fx-text-fill: green; }
+.status-light.error   { -fx-text-fill: red; }
+.status-light.idle    { -fx-text-fill: grey; }
