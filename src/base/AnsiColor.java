@@ -37,16 +37,14 @@ public class AnsiColor {
             int g = Integer.parseInt(hex.substring(3, 5), 16);
             int b = Integer.parseInt(hex.substring(5, 7), 16);
 
-            // Perceived brightness
-            double brightness = (0.299 * r + 0.587 * g + 0.114 * b);
-
-            if (brightness < 100) {
-                // Target brightness ~160 (softer than full white)
-                double factor = 160.0 / Math.max(1.0, brightness);
-
-                r = (int)Math.min(255, r * factor);
-                g = (int)Math.min(255, g * factor);
-                b = (int)Math.min(255, b * factor);
+            // Only brighten if it's really close to black (all channels low)
+            int threshold = 80; // adjust as needed
+            if (r <= threshold && g <= threshold && b <= threshold) {
+                // Lift it to a medium gray so it's visible
+                int target = 80;
+                r = target;
+                g = target;
+                b = target;
             }
 
             return String.format("#%02x%02x%02x", r, g, b);
@@ -54,4 +52,5 @@ public class AnsiColor {
             return hex;
         }
     }
+
 }

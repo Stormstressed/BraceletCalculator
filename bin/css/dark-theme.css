@@ -3,10 +3,34 @@
     -fx-text-fill: #ddd;
 }
 
+.label {
+    -fx-font-size: 14px;
+    -fx-text-fill: #ddd;
+}
+
+.text-field {
+    -fx-font-size: 14px;
+    -fx-padding: 4 8 4 8;
+    -fx-background-color: #2b2b2b;   /* softer gray */
+    -fx-border-color: #999999;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+	-fx-text-fill: #e0e0e0;
+}
+.text-field:focused {
+    -fx-background-color: #ffffff;   /* only brighten when focused */
+    -fx-border-color: #4a90e2;
+}
+
 .button {
     -fx-background-color: #444;
     -fx-text-fill: #ddd;
 }
+
+.button:pressed {
+    -fx-background-color: #2a5d8f;
+}
+
 
 .button:hover {
     -fx-background-color: #555;
@@ -23,11 +47,23 @@
 }
 
 .text-flow {
-    -fx-font-family: monospace;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+	-fx-font-size: 14px;
     -fx-background-color: #222;
     -fx-border-color: #444;
     -fx-border-width: 1;
     -fx-padding: 10;
+}
+
+.pattern {
+	-fx-font-size: 20px;
+	-fx-text-alignment: center;
+}
+
+.results-title {
+    -fx-fill: #888;          /* gray text */
+    -fx-font-weight: bold;   /* make it stand out */
+    -fx-font-size: 14px;     /* optional size tweak */
 }
 
 

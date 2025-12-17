@@ -6,6 +6,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -17,7 +19,8 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Objects;
 
 public class BraceletApp extends Application {
 
@@ -25,6 +28,8 @@ public class BraceletApp extends Application {
     private TextFlow patternFlow;
     private TextFlow resultsFlow;
     private Label statusLight;
+    private TextField allowanceField;
+    private TextField lengthField;
 
     private boolean showColors = true;
     private Pattern currentPattern;
@@ -40,17 +45,32 @@ public class BraceletApp extends Application {
         patternInput.setPromptText("Enter pattern ID or URL");
 
         Button loadBtn = new Button("Load");
+        Button copyPatternBtn = new Button("Copy Pattern");
+        Button copyResultsBtn = new Button("Copy Results");
+        
+        // TextFields for allowance and desired length
+        allowanceField = new TextField();
+        lengthField    = new TextField();
+
+        allowanceField.setPrefWidth(80);
+        lengthField.setPrefWidth(80);
+
+        // Labels for clarity
+        Label allowanceLabel = new Label("Extra allowance:");
+        Label lengthLabel    = new Label("Length:");
+        
         statusLight = new Label("● idle");
         statusLight.getStyleClass().add("status-light");
         statusLight.getStyleClass().add("idle");
 
-        HBox topBar = new HBox(10, patternInput, loadBtn, statusLight);
+        HBox topBar = new HBox(10, patternInput, loadBtn, copyPatternBtn, copyResultsBtn,allowanceLabel,allowanceField, lengthLabel, lengthField, statusLight);
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
         // Pattern area
         patternFlow = new TextFlow();
         patternFlow.getStyleClass().add("text-flow");
+        patternFlow.getStyleClass().add("pattern");
         ScrollPane patternScroll = new ScrollPane(patternFlow);
         patternScroll.setFitToWidth(true);
         patternScroll.setFitToHeight(true);
@@ -80,25 +100,19 @@ public class BraceletApp extends Application {
 
         Scene scene = new Scene(root, 900, 650);
 
-        // Stylesheet loading
-        addStylesheet(scene, "/css/dark-theme.css");
-        addStylesheet(scene, "/src/css/dark-theme.css");
-        addStylesheetFallback(scene, "css/dark-theme.css");
-
         URL cssUrl = getClass().getResource("/css/dark-theme.css");
         if (cssUrl != null) {
             scene.getStylesheets().add(cssUrl.toExternalForm());
         } else {
             System.err.println("dark-theme.css not found on classpath");
         }
-
         stage.setScene(scene);
         stage.setTitle("Bracelet Calculator");
         stage.show();
 
         refreshSavedIds();
 
-        // Events
+        // ================ Events ================
         loadBtn.setOnAction(e -> handleLoad());
         toggleColors.setOnAction(e -> {
             showColors = !showColors;
@@ -120,6 +134,75 @@ public class BraceletApp extends Application {
             if (newVal != null && !newVal.isBlank()) {
                 patternInput.getEditor().setText(newVal);
                 handleLoad();
+            }
+        });
+        
+        copyPatternBtn.setOnAction(e -> {
+            StringBuilder sb = new StringBuilder();
+
+            for (String[] row : currentPattern.getKnotRows()) {
+                sb.append(String.join(",", row)).append("\n");
+            }
+
+            ClipboardContent content = new ClipboardContent();
+            content.putString(sb.toString());
+            Clipboard.getSystemClipboard().setContent(content);
+        });
+
+        copyResultsBtn.setOnAction(e -> {
+            StringBuilder sb = new StringBuilder();
+
+            // Per‑string lengths
+            sb.append("Strings:\n");
+            currentPattern.getStringLengths().forEach((sid, len) -> {
+                String label = currentPattern.getLabels().getOrDefault(sid, "");
+                sb.append("String ").append(sid)
+                  .append(" [").append(label).append("]: ")
+                  .append(String.format("%.1f cm", len))
+                  .append("\n");
+            });
+
+            // Per‑color totals
+            sb.append("\nColors:\n");
+            currentPattern.getColorLengths().forEach((hex, len) -> {
+                sb.append(hex).append(": ")
+                  .append(String.format("%.1f cm", len))
+                  .append("\n");
+            });
+
+            // Final order after one loop
+            sb.append("\nFinal order after one loop:\n");
+            List<Integer> order = currentPattern.getFinalOrder();
+            for (int id : order) {
+                String label = currentPattern.getLabels().getOrDefault(id, "");
+                sb.append(id).append("[").append(label).append("] ");
+            }
+            sb.append("\n");
+
+            ClipboardContent content = new ClipboardContent();
+            content.putString(sb.toString());
+            Clipboard.getSystemClipboard().setContent(content);
+        });
+        
+        allowanceField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused && currentPattern != null) {
+                try {
+                    double allowance = Double.parseDouble(allowanceField.getText());
+                    currentPattern.setAllowance(allowance);
+                    PatternAnalyzer.analyze(currentPattern);
+                    displayPattern(currentPattern);
+                } catch (NumberFormatException ignored) { }
+            }
+        });
+
+        lengthField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (!isFocused && currentPattern != null) {
+                try {
+                    double len = Double.parseDouble(lengthField.getText());
+                    currentPattern.setDesiredBraceletLength(len);
+                    PatternAnalyzer.analyze(currentPattern);
+                    displayPattern(currentPattern);
+                } catch (NumberFormatException ignored) { }
             }
         });
 
@@ -152,6 +235,10 @@ public class BraceletApp extends Application {
             displayPattern(currentPattern);
             setStatus("ok");
             refreshSavedIds();
+
+            // also refresh the text fields with the pattern values
+            allowanceField.setText(String.valueOf(currentPattern.getAllowance()));
+            lengthField.setText(String.valueOf(currentPattern.getDesiredBraceletLength()));
         });
 
         task.setOnFailed(ev -> {
@@ -163,25 +250,46 @@ public class BraceletApp extends Application {
         new Thread(task, "load-pattern").start();
     }
 
+
     private void displayPattern(Pattern pattern) {
-        patternFlow.getChildren().clear();
+    	patternFlow.getChildren().clear();
         resultsFlow.getChildren().clear();
 
-        // Knot rows
-        for (String[] row : pattern.getKnotRows()) {
-            for (int i = 0; i < row.length; i++) {
-                String knot = row[i];
-                String rawHex = pattern.getColors().getOrDefault(i, "#cccccc");
+        List<List<String[]>> knotLabelRows = pattern.getKnotLabelRows();
+        int targetRows = 100;
+
+        for (int rowIndex = 0; rowIndex < targetRows; rowIndex++) {
+            List<String[]> row = knotLabelRows.get(rowIndex % knotLabelRows.size());
+
+            for (String[] cell : row) {
+                String knotType = cell[0];
+                String label    = cell[1];
+
+                // lookup color by label → string id → hex
+                int sid = pattern.getLabels().entrySet().stream()
+                        .filter(e -> Objects.equals(e.getValue(), label))
+                        .map(Map.Entry::getKey)
+                        .findFirst().orElse(-1);
+
+                String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
                 String hex = AnsiColor.brightenIfDark(rawHex);
-                Text t = new Text(knot + " ");
+
+                // pad single-letter knot codes
+                String display = (knotType.length() == 1) ? knotType + " " : knotType;
+
+                // colored Text for display
+                Text t = new Text(display + " ");
                 t.setFill(showColors ? Color.web(hex) : Color.web("#dddddd"));
                 patternFlow.getChildren().add(t);
+
             }
+
             patternFlow.getChildren().add(new Text("\n"));
         }
 
+
         // Results
-        appendLine(resultsFlow, "Strings:", Color.GRAY);
+        appendTitle(resultsFlow, "Strings:");
         pattern.getStringLengths().forEach((sid, len) -> {
             String label = pattern.getLabels().getOrDefault(sid, "");
             String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
@@ -191,7 +299,7 @@ public class BraceletApp extends Application {
         });
 
         resultsFlow.getChildren().add(new Text("\n"));
-        appendLine(resultsFlow, "Totals per color:", Color.GRAY);
+        appendTitle(resultsFlow, "Totals per color:");
         pattern.getColorLengths().forEach((rawHex, total) -> {
             String hex = AnsiColor.brightenIfDark(rawHex);
             String line = String.format("%s: %.1f cm", hex, total);
@@ -199,7 +307,7 @@ public class BraceletApp extends Application {
         });
 
         resultsFlow.getChildren().add(new Text("\n"));
-        appendLine(resultsFlow, "Final order:", Color.GRAY);
+        appendTitle(resultsFlow, "Final order:");
         for (int sid : pattern.getFinalOrder()) {
             String label = pattern.getLabels().getOrDefault(sid, "");
             String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
@@ -208,6 +316,13 @@ public class BraceletApp extends Application {
             appendLine(resultsFlow, line, showColors ? Color.web(hex) : Color.web("#dddddd"));
         }
     }
+    
+    private void appendTitle(TextFlow flow, String text) {
+        Text t = new Text(text + "\n");
+        t.getStyleClass().add("results-title");
+        flow.getChildren().add(t);
+    }
+
 
     private void appendLine(TextFlow flow, String text, Color color) {
         Text t = new Text(text + "\n");
@@ -257,22 +372,6 @@ public class BraceletApp extends Application {
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
         alert.showAndWait();
-    }
-
-    // Try classpath first; if not found, do nothing
-    private void addStylesheet(Scene scene, String classpathPath) {
-        URL url = BraceletApp.class.getResource(classpathPath);
-        if (url != null) {
-            scene.getStylesheets().add(url.toExternalForm());
-        }
-    }
-
-    // Fallback: load from file system to avoid NPE while you adjust resources
-    private void addStylesheetFallback(Scene scene, String filePath) {
-        File f = new File(filePath);
-        if (f.exists()) {
-            scene.getStylesheets().add(f.toURI().toString());
-        }
     }
 
     public static void main(String[] args) {

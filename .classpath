@@ -5,8 +5,8 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry excluding="main/resources/css/" kind="src" path="src"/>
-	<classpathentry kind="src" path="src/main/resources/css"/>
+	<classpathentry excluding="main/resources/css/|css/|main/resources/css/|css/|main/resources/css/|css/|main/resources/|main/|main/resources/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="lib" path="lib/jsoup-1.21.2.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.base.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/Java/javafx-sdk-21.0.9/lib/javafx.controls.jar"/>

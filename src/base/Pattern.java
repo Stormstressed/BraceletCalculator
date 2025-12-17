@@ -8,7 +8,11 @@ public class Pattern {
     private Map<Integer, String> labels = new HashMap<>();
     private List<String[]> knotRows = new ArrayList<>();
 
-    // Computed fields (initialized to empty so they never stay null)
+    // New: enriched rows with type + label pairs
+    // Each element is a row; each row is a list of [knotType, label]
+    private List<List<String[]>> knotLabelRows = new ArrayList<>();
+
+    // Computed fields
     private Map<Integer, Integer> tally = new HashMap<>();
     private int repeats;
     private int totalRows;
@@ -19,13 +23,10 @@ public class Pattern {
     private double allowance;
     private boolean valid;
 
-    // Nested enum for knots
     public enum Knot { F, B, FB, BF, UNKNOWN }
 
     // --- Constructors ---
-    public Pattern() {
-        // no-args constructor for Jackson
-    }
+    public Pattern() { }
 
     public Pattern(String id,
                    Map<Integer, String> colors,
@@ -46,6 +47,7 @@ public class Pattern {
     public Map<Integer, String> getColors() { return colors; }
     public Map<Integer, String> getLabels() { return labels; }
     public List<String[]> getKnotRows() { return knotRows; }
+    public List<List<String[]>> getKnotLabelRows() { return knotLabelRows; }
     public Map<Integer, Integer> getTally() { return tally; }
     public int getRepeats() { return repeats; }
     public int getTotalRows() { return totalRows; }
@@ -56,11 +58,12 @@ public class Pattern {
     public double getAllowance() { return allowance; }
     public boolean isValid() { return valid; }
 
-    // --- Setters for Jackson and analyzer ---
+    // --- Setters ---
     public void setId(String id) { this.id = id; }
     public void setColors(Map<Integer, String> colors) { this.colors = colors; }
     public void setLabels(Map<Integer, String> labels) { this.labels = labels; }
     public void setKnotRows(List<String[]> knotRows) { this.knotRows = knotRows; }
+    public void setKnotLabelRows(List<List<String[]>> knotLabelRows) { this.knotLabelRows = knotLabelRows; }
     public void setTally(Map<Integer, Integer> tally) { this.tally = tally; }
     public void setRepeats(int repeats) { this.repeats = repeats; }
     public void setTotalRows(int totalRows) { this.totalRows = totalRows; }
