@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -59,16 +59,23 @@ jobs:
           EOF
         shell: bash
 
-      - name: Zip portable app
-        run: |
-          zip -r app-${{ matrix.os }}.zip portable
+      # Linux + Windows ZIP handling
+      - name: Zip portable app (Linux)
+        if: runner.os == 'Linux'
+        run: zip -r app-linux.zip portable
         shell: bash
+
+      - name: Zip portable app (Windows)
+        if: runner.os == 'Windows'
+        run: powershell Compress-Archive -Path portable -DestinationPath app-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.os }}
-          path: app-${{ matrix.os }}.zip
+          path: |
+            app-linux.zip
+            app-windows.zip
 
   release:
     name: Publish Release
