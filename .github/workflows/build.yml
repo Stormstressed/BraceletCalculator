@@ -30,16 +30,17 @@ jobs:
         run: mvn -B dependency:copy-dependencies -DincludeScope=runtime
 
       - name: Create runtime image with jlink
-        run: |
-          mkdir runtime
-          jlink \
-            --add-modules $(jdeps --print-module-deps --ignore-missing-deps target/*.jar) \
-            --output runtime \
-            --strip-debug \
-            --no-header-files \
-            --no-man-pages \
-            --compress=2
-        shell: bash
+          run: |
+            rm -rf runtime
+            jlink \
+              --add-modules $(jdeps --print-module-deps --ignore-missing-deps target/*.jar) \
+              --output runtime \
+              --strip-debug \
+              --no-header-files \
+              --no-man-pages \
+              --compress=2
+          shell: bash
+
 
       - name: Prepare portable app
         run: |
