@@ -15,7 +15,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
-import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class BraceletApp extends Application {
+	
 
     private ComboBox<String> patternInput;
     private TextFlow patternFlow;
@@ -30,6 +30,9 @@ public class BraceletApp extends Application {
     private Label statusLight;
     private TextField allowanceField;
     private TextField lengthField;
+    private Button loadBtn;
+    private Button copyPatternBtn;
+    private Button copyResultsBtn;
 
     private boolean showColors = true;
     private Pattern currentPattern;
@@ -37,176 +40,168 @@ public class BraceletApp extends Application {
     // keep a master list for filtering
     private List<String> allIds = new ArrayList<>();
 
-    @Override
-    public void start(Stage stage) {
-        // Inputs
-        patternInput = new ComboBox<>();
-        patternInput.setEditable(true);
-        patternInput.setPromptText("Enter pattern ID or URL");
+	@Override
+	public void start(Stage stage) {
+	    buildUI(stage);
+	    wireEvents();
+	    refreshSavedIds();
+	}
+	
+	private void buildUI(Stage stage) {
+	    // Inputs
+	    patternInput = new ComboBox<>();
+	    patternInput.setEditable(true);
+	    patternInput.setPromptText("Enter pattern ID or URL");
 
-        Button loadBtn = new Button("Load");
-        Button copyPatternBtn = new Button("Copy Pattern");
-        Button copyResultsBtn = new Button("Copy Results");
-        
-        // TextFields for allowance and desired length
-        allowanceField = new TextField();
-        lengthField    = new TextField();
+	    loadBtn = new Button("Load");
+	    copyPatternBtn = new Button("Copy Pattern");
+	    copyResultsBtn = new Button("Copy Results");
 
-        allowanceField.setPrefWidth(80);
-        lengthField.setPrefWidth(80);
+	    allowanceField = new TextField();
+	    lengthField    = new TextField();
 
-        // Labels for clarity
-        Label allowanceLabel = new Label("Extra allowance:");
-        Label lengthLabel    = new Label("Length:");
-        
-        statusLight = new Label("● idle");
-        statusLight.getStyleClass().add("status-light");
-        statusLight.getStyleClass().add("idle");
+	    allowanceField.setPrefWidth(80);
+	    lengthField.setPrefWidth(80);
 
-        HBox topBar = new HBox(10, patternInput, loadBtn, copyPatternBtn, copyResultsBtn,allowanceLabel,allowanceField, lengthLabel, lengthField, statusLight);
-        topBar.setPadding(new Insets(10));
-        topBar.setAlignment(Pos.CENTER_LEFT);
+	    Label allowanceLabel = new Label("Extra allowance:");
+	    Label lengthLabel    = new Label("Length:");
 
-        // Pattern area
-        patternFlow = new TextFlow();
-        patternFlow.getStyleClass().add("text-flow");
-        patternFlow.getStyleClass().add("pattern");
-        ScrollPane patternScroll = new ScrollPane(patternFlow);
-        patternScroll.setFitToWidth(true);
-        patternScroll.setFitToHeight(true);
-        patternScroll.getStyleClass().add("flow-scroll");
+	    statusLight = new Label("● idle");
+	    statusLight.getStyleClass().addAll("status-light", "idle");
 
-        // Results area
-        resultsFlow = new TextFlow();
-        resultsFlow.getStyleClass().add("text-flow");
-        ScrollPane resultsScroll = new ScrollPane(resultsFlow);
-        resultsScroll.setFitToWidth(true);
-        resultsScroll.setFitToHeight(true);
-        resultsScroll.getStyleClass().add("flow-scroll");
+	    HBox topBar = new HBox(
+	        10, patternInput, loadBtn, copyPatternBtn, copyResultsBtn,
+	        allowanceLabel, allowanceField, lengthLabel, lengthField, statusLight
+	    );
+	    topBar.setPadding(new Insets(10));
+	    topBar.setAlignment(Pos.CENTER_LEFT);
 
-        Button toggleColors = new Button("Toggle Colors");
+	    patternFlow = new TextFlow();
+	    patternFlow.getStyleClass().addAll("text-flow", "pattern");
 
-        // stack vertically
-        HBox flowsBox = new HBox(8, patternScroll, resultsScroll);
-        flowsBox.setPadding(new Insets(10));
-        HBox.setHgrow(patternScroll, Priority.ALWAYS);
-        HBox.setHgrow(resultsScroll, Priority.ALWAYS);
+	    ScrollPane patternScroll = new ScrollPane(patternFlow);
+	    patternScroll.setFitToWidth(true);
+	    patternScroll.setFitToHeight(true);
+	    patternScroll.getStyleClass().add("flow-scroll");
 
+	    resultsFlow = new TextFlow();
+	    resultsFlow.getStyleClass().add("text-flow");
 
+	    ScrollPane resultsScroll = new ScrollPane(resultsFlow);
+	    resultsScroll.setFitToWidth(true);
+	    resultsScroll.setFitToHeight(true);
+	    resultsScroll.getStyleClass().add("flow-scroll");
 
-        BorderPane root = new BorderPane();
-        root.setTop(topBar);
-        root.setCenter(flowsBox);
+	    HBox flowsBox = new HBox(8, patternScroll, resultsScroll);
+	    flowsBox.setPadding(new Insets(10));
+	    HBox.setHgrow(patternScroll, Priority.ALWAYS);
+	    HBox.setHgrow(resultsScroll, Priority.ALWAYS);
 
-        Scene scene = new Scene(root, 900, 650);
+	    BorderPane root = new BorderPane();
+	    root.setTop(topBar);
+	    root.setCenter(flowsBox);
 
-        URL cssUrl = getClass().getResource("/css/dark-theme.css");
-        if (cssUrl != null) {
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-        } else {
-            System.err.println("dark-theme.css not found on classpath");
-        }
-        stage.setScene(scene);
-        stage.setTitle("Bracelet Calculator");
-        stage.show();
+	    Scene scene = new Scene(root, 900, 650);
 
-        refreshSavedIds();
+	    URL cssUrl = getClass().getResource("/css/dark-theme.css");
+	    if (cssUrl != null) {
+	        scene.getStylesheets().add(cssUrl.toExternalForm());
+	    }
 
-        // ================ Events ================
-        loadBtn.setOnAction(e -> handleLoad());
-        toggleColors.setOnAction(e -> {
-            showColors = !showColors;
-            if (currentPattern != null) displayPattern(currentPattern);
-        });
+	    stage.setScene(scene);
+	    stage.setTitle("Bracelet Calculator");
+	    stage.show();
+	}
 
-        // Enter in editor
-        patternInput.getEditor().setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                String typed = patternInput.getEditor().getText().trim();
-                if (!typed.isEmpty()) {
-                    handleLoad();
-                }
-            }
-        });
+	private void wireEvents() {
 
-        // Click selection
-        patternInput.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && !newVal.isBlank()) {
-                patternInput.getEditor().setText(newVal);
-                handleLoad();
-            }
-        });
-        
-        copyPatternBtn.setOnAction(e -> {
-            StringBuilder sb = new StringBuilder();
+	    loadBtn.setOnAction(e -> handleLoad());
 
-            for (String[] row : currentPattern.getKnotRows()) {
-                sb.append(String.join(",", row)).append("\n");
-            }
+	    // Enter key in ComboBox editor
+	    patternInput.getEditor().setOnKeyPressed(event -> {
+	        if (event.getCode() == KeyCode.ENTER) {
+	            String typed = patternInput.getEditor().getText().trim();
+	            if (!typed.isEmpty()) handleLoad();
+	        }
+	    });
 
-            ClipboardContent content = new ClipboardContent();
-            content.putString(sb.toString());
-            Clipboard.getSystemClipboard().setContent(content);
-        });
+	    // Selecting from dropdown
+	    patternInput.valueProperty().addListener((obs, oldVal, newVal) -> {
+	        if (newVal != null && !newVal.isBlank()) {
+	            patternInput.getEditor().setText(newVal);
+	            handleLoad();
+	        }
+	    });
 
-        copyResultsBtn.setOnAction(e -> {
-            StringBuilder sb = new StringBuilder();
+	    copyPatternBtn.setOnAction(e -> {
+	        if (currentPattern == null) return;
 
-            // Per‑string lengths
-            sb.append("Strings:\n");
-            currentPattern.getStringLengths().forEach((sid, len) -> {
-                String label = currentPattern.getLabels().getOrDefault(sid, "");
-                sb.append("String ").append(sid)
-                  .append(" [").append(label).append("]: ")
-                  .append(String.format("%.1f cm", len))
-                  .append("\n");
-            });
+	        StringBuilder sb = new StringBuilder();
+	        for (String[] row : currentPattern.getKnotRows()) {
+	            sb.append(String.join(",", row)).append("\n");
+	        }
 
-            // Per‑color totals
-            sb.append("\nColors:\n");
-            currentPattern.getColorLengths().forEach((hex, len) -> {
-                sb.append(hex).append(": ")
-                  .append(String.format("%.1f cm", len))
-                  .append("\n");
-            });
+	        ClipboardContent content = new ClipboardContent();
+	        content.putString(sb.toString());
+	        Clipboard.getSystemClipboard().setContent(content);
+	    });
 
-            // Final order after one loop
-            sb.append("\nFinal order after one loop:\n");
-            List<Integer> order = currentPattern.getFinalOrder();
-            for (int id : order) {
-                String label = currentPattern.getLabels().getOrDefault(id, "");
-                sb.append(id).append("[").append(label).append("] ");
-            }
-            sb.append("\n");
+	    copyResultsBtn.setOnAction(e -> {
+	        if (currentPattern == null) return;
 
-            ClipboardContent content = new ClipboardContent();
-            content.putString(sb.toString());
-            Clipboard.getSystemClipboard().setContent(content);
-        });
-        
-        allowanceField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused && currentPattern != null) {
-                try {
-                    double allowance = Double.parseDouble(allowanceField.getText());
-                    currentPattern.setAllowance(allowance);
-                    PatternAnalyzer.analyze(currentPattern);
-                    displayPattern(currentPattern);
-                } catch (NumberFormatException ignored) { }
-            }
-        });
+	        StringBuilder sb = new StringBuilder();
 
-        lengthField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-            if (!isFocused && currentPattern != null) {
-                try {
-                    double len = Double.parseDouble(lengthField.getText());
-                    currentPattern.setDesiredBraceletLength(len);
-                    PatternAnalyzer.analyze(currentPattern);
-                    displayPattern(currentPattern);
-                } catch (NumberFormatException ignored) { }
-            }
-        });
+	        sb.append("Strings:\n");
+	        currentPattern.getStringLengths().forEach((sid, len) -> {
+	            String label = currentPattern.getLabels().getOrDefault(sid, "");
+	            sb.append("String ").append(sid)
+	              .append(" [").append(label).append("]: ")
+	              .append(String.format("%.1f cm", len))
+	              .append("\n");
+	        });
 
-    }
+	        sb.append("\nColors:\n");
+	        currentPattern.getColorLengths().forEach((hex, len) -> {
+	            sb.append(hex).append(": ")
+	              .append(String.format("%.1f cm", len))
+	              .append("\n");
+	        });
+
+	        sb.append("\nFinal order after one loop:\n");
+	        List<Integer> order = currentPattern.getFinalOrder();
+	        for (int id : order) {
+	            String label = currentPattern.getLabels().getOrDefault(id, "");
+	            sb.append(id).append("[").append(label).append("] ");
+	        }
+	        sb.append("\n");
+
+	        ClipboardContent content = new ClipboardContent();
+	        content.putString(sb.toString());
+	        Clipboard.getSystemClipboard().setContent(content);
+	    });
+
+	    allowanceField.focusedProperty().addListener((obs, was, is) -> {
+	        if (!is && currentPattern != null) {
+	            try {
+	                double allowance = Double.parseDouble(allowanceField.getText());
+	                currentPattern.setAllowance(allowance);
+	                PatternAnalyzer.analyze(currentPattern);
+	                displayPattern(currentPattern);
+	            } catch (NumberFormatException ignored) {}
+	        }
+	    });
+
+	    lengthField.focusedProperty().addListener((obs, was, is) -> {
+	        if (!is && currentPattern != null) {
+	            try {
+	                double len = Double.parseDouble(lengthField.getText());
+	                currentPattern.setDesiredBraceletLength(len);
+	                PatternAnalyzer.analyze(currentPattern);
+	                displayPattern(currentPattern);
+	            } catch (NumberFormatException ignored) {}
+	        }
+	    });
+	}
 
     private void handleLoad() {
         String idOrUrl = patternInput.getEditor().getText().trim();
@@ -249,7 +244,6 @@ public class BraceletApp extends Application {
 
         new Thread(task, "load-pattern").start();
     }
-
 
     private void displayPattern(Pattern pattern) {
     	patternFlow.getChildren().clear();
@@ -323,7 +317,6 @@ public class BraceletApp extends Application {
         flow.getChildren().add(t);
     }
 
-
     private void appendLine(TextFlow flow, String text, Color color) {
         Text t = new Text(text + "\n");
         t.setFill(color);
@@ -367,7 +360,6 @@ public class BraceletApp extends Application {
         });
         patternInput.getItems().setAll(allIds);
     }
-
 
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
