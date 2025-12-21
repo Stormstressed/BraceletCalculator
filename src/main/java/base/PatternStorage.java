@@ -34,15 +34,20 @@ public class PatternStorage {
         }
     }
 
-    /** Save a single pattern under its ID */
     public static void savePattern(Pattern pattern, String id) throws IOException {
         cache.put(id, pattern);
         mapper.writeValue(new File(STORAGE_FILE), cache);
     }
 
-    /** Load a pattern by ID, or null if not found */
     public static Pattern loadPattern(String id) throws IOException {
         return cache.get(id);
+    }
+    
+    public static void deletePattern(String id) throws IOException {
+        if (cache.remove(id) != null) {
+            // Rewrite the entire JSON file with the updated cache
+            mapper.writeValue(new File(STORAGE_FILE), cache);
+        }
     }
 
     public static Set<String> getSavedIds() {

@@ -15,6 +15,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,9 @@ public class BraceletApp extends Application {
     private Button loadBtn;
     private Button copyPatternBtn;
     private Button copyResultsBtn;
+    private Button deleteBtn;
 
+    private boolean suppressComboEvents = false;
     private boolean showColors = true;
     private Pattern currentPattern;
 
@@ -59,14 +62,16 @@ public class BraceletApp extends Application {
 	    loadBtn = new Button("Load");
 	    copyPatternBtn = new Button("Copy Pattern");
 	    copyResultsBtn = new Button("Copy Results");
+	    deleteBtn = new Button("Delete");
 
 	    allowanceField = new TextField();
 	    lengthField    = new TextField();
-	    knotCountField = new TextField(String.valueOf(DEFAULT_KNOT_ROWS));
+	    knotCountField = new TextField();
 
 	    allowanceField.setPrefWidth(80);
 	    lengthField.setPrefWidth(80);
 	    knotCountField.setPrefWidth(80);
+	    deleteBtn.setPrefWidth(80);
 
 	    Label allowanceLabel = new Label("Extra allowance:");
 	    Label lengthLabel    = new Label("Length:");
@@ -80,6 +85,7 @@ public class BraceletApp extends Application {
 	    	    loadBtn,
 	    	    copyPatternBtn,
 	    	    copyResultsBtn,
+	    	    deleteBtn,
 	    	    allowanceLabel, allowanceField,
 	    	    lengthLabel, lengthField,
 	    	    knotCountLabel, knotCountField,
@@ -140,7 +146,9 @@ public class BraceletApp extends Application {
 
 	    // Selecting from dropdown
 	    patternInput.valueProperty().addListener((obs, oldVal, newVal) -> {
-	        if (newVal != null && !newVal.isBlank()) {
+	        if (suppressComboEvents) return;
+
+	        if (newVal != null && !newVal.isBlank() && !newVal.equals(oldVal)) {
 	            patternInput.getEditor().setText(newVal);
 	            handleLoad();
 	        }
@@ -191,6 +199,27 @@ public class BraceletApp extends Application {
 	        ClipboardContent content = new ClipboardContent();
 	        content.putString(sb.toString());
 	        Clipboard.getSystemClipboard().setContent(content);
+	    });
+	    
+	    deleteBtn.setOnAction(e -> {
+	        String id = patternInput.getEditor().getText().trim();
+	        if (id.isEmpty()) {
+	            showError("Enter a pattern ID to delete.");
+	            return;
+	        }
+
+	        try {
+	            PatternStorage.deletePattern(id);
+	        } catch (IOException ex) {
+	            showError("Could not delete pattern: " + ex.getMessage());
+	            return;
+	        }
+
+	        // Update ComboBox list
+	        refreshSavedIds();
+
+	        // Reset UI to initial state
+	        resetUI();
 	    });
 
 	    allowanceField.focusedProperty().addListener((obs, was, is) -> {
@@ -398,17 +427,45 @@ public class BraceletApp extends Application {
     }
 
     private void refreshSavedIds() {
-        allIds = new ArrayList<>(PatternStorage.getSavedIds());
-        // sort numerically, smallest to biggest
-        allIds.sort((a, b) -> {
-            try {
-                return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
-            } catch (NumberFormatException e) {
-                // fallback: non-numeric entries sorted alphabetically
-                return a.compareToIgnoreCase(b);
-            }
-        });
-        patternInput.getItems().setAll(allIds);
+        String typed = patternInput.getEditor().getText();
+
+        suppressComboEvents = true;
+        try {
+            allIds = new ArrayList<>(PatternStorage.getSavedIds());
+
+            allIds.sort((a, b) -> {
+                try {
+                    return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
+                } catch (NumberFormatException e) {
+                    return a.compareToIgnoreCase(b);
+                }
+            });
+
+            patternInput.getItems().setAll(allIds);
+
+            patternInput.getEditor().setText(typed);
+            patternInput.setValue(typed);
+
+        } finally {
+            suppressComboEvents = false;
+        }
+    }
+    
+    private void resetUI() {
+        currentPattern = null;
+
+        // Clear TextFlows
+        patternFlow.getChildren().clear();
+        resultsFlow.getChildren().clear();
+
+        // Clear all text fields
+        patternInput.getEditor().clear();
+        allowanceField.clear();
+        lengthField.clear();
+        knotCountField.clear();
+
+        // Reset status
+        setStatus("idle");
     }
 
     private void showError(String msg) {
