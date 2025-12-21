@@ -174,4 +174,14 @@
 }
 
 /* /ALERT */
+/* TOAST */
+.toast {
+    -fx-background-color: rgba(0, 0, 0, 0.85);
+    -fx-text-fill: white;
+    -fx-padding: 8 14;
+    -fx-background-radius: 6;
+    -fx-font-size: 14px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0.3, 0, 2);
+}
+/* /TOAST */
 

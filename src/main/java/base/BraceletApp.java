@@ -1,9 +1,11 @@
 package base;
 
+import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -14,6 +16,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
@@ -23,10 +26,14 @@ import java.util.Map;
 import java.util.Objects;
 
 public class BraceletApp extends Application {
-	
+
+	private static final int WINDOW_WIDTH  = 1150;
+	private static final int WINDOW_HEIGHT = 800;
+	private static final int TOAST_TOP_MARGIN = 45;
 	private static final int DEFAULT_KNOT_ROWS = 115;
 	private static final int MAX_KNOT_ROWS = 300;
 
+	private Stage stage;
     private ComboBox<String> patternInput;
     private TextFlow patternFlow;
     private TextFlow resultsFlow;
@@ -46,91 +53,97 @@ public class BraceletApp extends Application {
     // keep a master list for filtering
     private List<String> allIds = new ArrayList<>();
 
-	@Override
-	public void start(Stage stage) {
-	    buildUI(stage);
-	    wireEvents();
-	    refreshSavedIds();
-	}
+    @Override
+    public void start(Stage stage) {
+        this.stage = stage;
+
+        Parent ui = buildUI();
+        StackPane stack = new StackPane(ui);  // overlay layer for toast
+
+        Scene scene = new Scene(stack, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        URL cssUrl = getClass().getResource("/css/dark-theme.css");
+        if (cssUrl != null) {
+            scene.getStylesheets().add(cssUrl.toExternalForm());
+        }
+
+        stage.setScene(scene);
+        stage.setTitle("Bracelet Calculator");
+        stage.show();
+
+        wireEvents();
+        refreshSavedIds();
+    }
 	
-	private void buildUI(Stage stage) {
-	    // Inputs
-	    patternInput = new ComboBox<>();
-	    patternInput.setEditable(true);
-	    patternInput.setPromptText("Enter pattern ID or URL");
+    private Parent buildUI() {
+        // Inputs
+        patternInput = new ComboBox<>();
+        patternInput.setEditable(true);
+        patternInput.setPromptText("Enter pattern ID or URL");
 
-	    loadBtn = new Button("Load");
-	    copyPatternBtn = new Button("Copy Pattern");
-	    copyResultsBtn = new Button("Copy Results");
-	    deleteBtn = new Button("Delete");
+        loadBtn = new Button("Load");
+        copyPatternBtn = new Button("Copy Pattern");
+        copyResultsBtn = new Button("Copy Results");
+        deleteBtn = new Button("Delete");
 
-	    allowanceField = new TextField();
-	    lengthField    = new TextField();
-	    knotCountField = new TextField();
+        allowanceField = new TextField();
+        lengthField    = new TextField();
+        knotCountField = new TextField();
 
-	    allowanceField.setPrefWidth(80);
-	    lengthField.setPrefWidth(80);
-	    knotCountField.setPrefWidth(80);
-	    deleteBtn.setPrefWidth(80);
+        allowanceField.setPrefWidth(80);
+        lengthField.setPrefWidth(80);
+        knotCountField.setPrefWidth(80);
+        deleteBtn.setPrefWidth(80);
 
-	    Label allowanceLabel = new Label("Extra allowance:");
-	    Label lengthLabel    = new Label("Length:");
-	    Label knotCountLabel = new Label("Knot rows:");
+        Label allowanceLabel = new Label("Extra allowance:");
+        Label lengthLabel    = new Label("Length:");
+        Label knotCountLabel = new Label("Knot rows:");
 
-	    statusLight = new Label("● idle");
-	    statusLight.getStyleClass().addAll("status-light", "idle");
+        statusLight = new Label("● idle");
+        statusLight.getStyleClass().addAll("status-light", "idle");
 
-	    HBox topBar = new HBox(10,
-	    	    patternInput,
-	    	    loadBtn,
-	    	    copyPatternBtn,
-	    	    copyResultsBtn,
-	    	    deleteBtn,
-	    	    allowanceLabel, allowanceField,
-	    	    lengthLabel, lengthField,
-	    	    knotCountLabel, knotCountField,
-	    	    statusLight
-	    	);
+        HBox topBar = new HBox(
+            10,
+            patternInput,
+            loadBtn,
+            copyPatternBtn,
+            copyResultsBtn,
+            deleteBtn,
+            allowanceLabel, allowanceField,
+            lengthLabel, lengthField,
+            knotCountLabel, knotCountField,
+            statusLight
+        );
+        topBar.setPadding(new Insets(10));
+        topBar.setAlignment(Pos.CENTER_LEFT);
 
-	    topBar.setPadding(new Insets(10));
-	    topBar.setAlignment(Pos.CENTER_LEFT);
+        patternFlow = new TextFlow();
+        patternFlow.getStyleClass().addAll("text-flow", "pattern");
 
-	    patternFlow = new TextFlow();
-	    patternFlow.getStyleClass().addAll("text-flow", "pattern");
+        ScrollPane patternScroll = new ScrollPane(patternFlow);
+        patternScroll.setFitToWidth(true);
+        patternScroll.setFitToHeight(true);
+        patternScroll.getStyleClass().add("flow-scroll");
 
-	    ScrollPane patternScroll = new ScrollPane(patternFlow);
-	    patternScroll.setFitToWidth(true);
-	    patternScroll.setFitToHeight(true);
-	    patternScroll.getStyleClass().add("flow-scroll");
+        resultsFlow = new TextFlow();
+        resultsFlow.getStyleClass().add("text-flow");
 
-	    resultsFlow = new TextFlow();
-	    resultsFlow.getStyleClass().add("text-flow");
+        ScrollPane resultsScroll = new ScrollPane(resultsFlow);
+        resultsScroll.setFitToWidth(true);
+        resultsScroll.setFitToHeight(true);
+        resultsScroll.getStyleClass().add("flow-scroll");
 
-	    ScrollPane resultsScroll = new ScrollPane(resultsFlow);
-	    resultsScroll.setFitToWidth(true);
-	    resultsScroll.setFitToHeight(true);
-	    resultsScroll.getStyleClass().add("flow-scroll");
+        HBox flowsBox = new HBox(8, patternScroll, resultsScroll);
+        flowsBox.setPadding(new Insets(10));
+        HBox.setHgrow(patternScroll, Priority.ALWAYS);
+        HBox.setHgrow(resultsScroll, Priority.ALWAYS);
 
-	    HBox flowsBox = new HBox(8, patternScroll, resultsScroll);
-	    flowsBox.setPadding(new Insets(10));
-	    HBox.setHgrow(patternScroll, Priority.ALWAYS);
-	    HBox.setHgrow(resultsScroll, Priority.ALWAYS);
+        BorderPane root = new BorderPane();
+        root.setTop(topBar);
+        root.setCenter(flowsBox);
 
-	    BorderPane root = new BorderPane();
-	    root.setTop(topBar);
-	    root.setCenter(flowsBox);
-
-	    Scene scene = new Scene(root, 900, 650);
-
-	    URL cssUrl = getClass().getResource("/css/dark-theme.css");
-	    if (cssUrl != null) {
-	        scene.getStylesheets().add(cssUrl.toExternalForm());
-	    }
-
-	    stage.setScene(scene);
-	    stage.setTitle("Bracelet Calculator");
-	    stage.show();
-	}
+        return root;
+    }
 
 	private void wireEvents() {
 
@@ -155,7 +168,10 @@ public class BraceletApp extends Application {
 	    });
 
 	    copyPatternBtn.setOnAction(e -> {
-	        if (currentPattern == null) return;
+	        if (currentPattern == null) {
+	        	showToast("Select a pattern first");
+	        	return;
+	        }
 
 	        StringBuilder sb = new StringBuilder();
 	        for (String[] row : currentPattern.getKnotRows()) {
@@ -165,10 +181,14 @@ public class BraceletApp extends Application {
 	        ClipboardContent content = new ClipboardContent();
 	        content.putString(sb.toString());
 	        Clipboard.getSystemClipboard().setContent(content);
+	        showToast("Original pattern copied!");
 	    });
 
 	    copyResultsBtn.setOnAction(e -> {
-	        if (currentPattern == null) return;
+	        if (currentPattern == null) {
+	        	showToast("Select a pattern first");
+	        	return;
+	        }
 
 	        StringBuilder sb = new StringBuilder();
 
@@ -199,27 +219,27 @@ public class BraceletApp extends Application {
 	        ClipboardContent content = new ClipboardContent();
 	        content.putString(sb.toString());
 	        Clipboard.getSystemClipboard().setContent(content);
+	        showToast("Strings length copied!");
 	    });
 	    
 	    deleteBtn.setOnAction(e -> {
 	        String id = patternInput.getEditor().getText().trim();
 	        if (id.isEmpty()) {
-	            showError("Enter a pattern ID to delete.");
+	        	showToast("Select a pattern first");
 	            return;
 	        }
 
 	        try {
 	            PatternStorage.deletePattern(id);
 	        } catch (IOException ex) {
-	            showError("Could not delete pattern: " + ex.getMessage());
+	            showToast("Could not delete pattern " + id);
 	            return;
 	        }
 
-	        // Update ComboBox list
 	        refreshSavedIds();
-
-	        // Reset UI to initial state
 	        resetUI();
+
+	        showToast("Deleted pattern " + id);
 	    });
 
 	    allowanceField.focusedProperty().addListener((obs, was, is) -> {
@@ -251,7 +271,6 @@ public class BraceletApp extends Application {
 	    knotCountField.setOnKeyPressed(event -> {
 	        if (event.getCode() == KeyCode.ENTER) applyKnotCount();
 	    });
-
 
 	}
 
@@ -451,6 +470,23 @@ public class BraceletApp extends Application {
         }
     }
     
+    private void showToast(String message) {
+        Label toast = new Label(message);
+        toast.getStyleClass().add("toast");
+
+        StackPane root = (StackPane) stage.getScene().getRoot();
+        StackPane.setAlignment(toast, Pos.TOP_CENTER);
+        StackPane.setMargin(toast, new Insets(TOAST_TOP_MARGIN, 0, 0, 0));
+        root.getChildren().add(toast);
+
+        FadeTransition fade = new FadeTransition(Duration.seconds(2), toast);
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0);
+        fade.setDelay(Duration.seconds(1));
+        fade.setOnFinished(ev -> root.getChildren().remove(toast));
+        fade.play();
+    }
+
     private void resetUI() {
         currentPattern = null;
 
