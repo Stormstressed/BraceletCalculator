@@ -30,7 +30,7 @@ jobs:
           tar -xf javafx-jmods.zip
           ren javafx-jmods-21.0.9 javafx-jmods
 
-      - name: Build with Maven
+      - name: Build with Maven (shaded JAR)
         run: mvn -B package
 
       - name: Create portable app with jpackage
@@ -41,11 +41,10 @@ jobs:
           --main-class base.BraceletApp
           --module-path "$env:JAVA_HOME\jmods;javafx-jmods"
           --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,java.base,jdk.crypto.ec
-          --win-console
+          --icon src/main/resources/icon.ico
           --dest dist
 
-      - name: Upload portable app
-        uses: actions/upload-artifact@v4
+      - name: Upload portable app to release
+        uses: softprops/action-gh-release@v1
         with:
-          name: BraceletCalculator-portable
-          path: dist/BraceletCalculator
+          files: dist/BraceletCalculator/**
