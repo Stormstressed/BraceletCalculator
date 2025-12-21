@@ -23,6 +23,8 @@ import java.util.Objects;
 
 public class BraceletApp extends Application {
 	
+	private static final int DEFAULT_KNOT_ROWS = 115;
+	private static final int MAX_KNOT_ROWS = 300;
 
     private ComboBox<String> patternInput;
     private TextFlow patternFlow;
@@ -30,6 +32,7 @@ public class BraceletApp extends Application {
     private Label statusLight;
     private TextField allowanceField;
     private TextField lengthField;
+    private TextField knotCountField;
     private Button loadBtn;
     private Button copyPatternBtn;
     private Button copyResultsBtn;
@@ -59,20 +62,30 @@ public class BraceletApp extends Application {
 
 	    allowanceField = new TextField();
 	    lengthField    = new TextField();
+	    knotCountField = new TextField(String.valueOf(DEFAULT_KNOT_ROWS));
 
 	    allowanceField.setPrefWidth(80);
 	    lengthField.setPrefWidth(80);
+	    knotCountField.setPrefWidth(80);
 
 	    Label allowanceLabel = new Label("Extra allowance:");
 	    Label lengthLabel    = new Label("Length:");
+	    Label knotCountLabel = new Label("Knot rows:");
 
 	    statusLight = new Label("● idle");
 	    statusLight.getStyleClass().addAll("status-light", "idle");
 
-	    HBox topBar = new HBox(
-	        10, patternInput, loadBtn, copyPatternBtn, copyResultsBtn,
-	        allowanceLabel, allowanceField, lengthLabel, lengthField, statusLight
-	    );
+	    HBox topBar = new HBox(10,
+	    	    patternInput,
+	    	    loadBtn,
+	    	    copyPatternBtn,
+	    	    copyResultsBtn,
+	    	    allowanceLabel, allowanceField,
+	    	    lengthLabel, lengthField,
+	    	    knotCountLabel, knotCountField,
+	    	    statusLight
+	    	);
+
 	    topBar.setPadding(new Insets(10));
 	    topBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -201,6 +214,16 @@ public class BraceletApp extends Application {
 	            } catch (NumberFormatException ignored) {}
 	        }
 	    });
+	    
+	    knotCountField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+	        if (!isFocused) applyKnotCount();
+	    });
+	    
+	    knotCountField.setOnKeyPressed(event -> {
+	        if (event.getCode() == KeyCode.ENTER) applyKnotCount();
+	    });
+
+
 	}
 
     private void handleLoad() {
@@ -231,6 +254,8 @@ public class BraceletApp extends Application {
             setStatus("ok");
             refreshSavedIds();
 
+            knotCountField.setText(String.valueOf(DEFAULT_KNOT_ROWS));
+            
             // also refresh the text fields with the pattern values
             allowanceField.setText(String.valueOf(currentPattern.getAllowance()));
             lengthField.setText(String.valueOf(currentPattern.getDesiredBraceletLength()));
@@ -250,7 +275,15 @@ public class BraceletApp extends Application {
         resultsFlow.getChildren().clear();
 
         List<List<String[]>> knotLabelRows = pattern.getKnotLabelRows();
-        int targetRows = 100;
+        
+        int targetRows;
+        try {
+            targetRows = Integer.parseInt(knotCountField.getText());
+            if (targetRows < 1) targetRows = 1;
+            if (targetRows > MAX_KNOT_ROWS) targetRows = MAX_KNOT_ROWS;
+        } catch (NumberFormatException e) {
+            targetRows = 100;
+        }
 
         for (int rowIndex = 0; rowIndex < targetRows; rowIndex++) {
             List<String[]> row = knotLabelRows.get(rowIndex % knotLabelRows.size());
@@ -309,6 +342,23 @@ public class BraceletApp extends Application {
             String line = String.format("String %d [%s]", sid, label);
             appendLine(resultsFlow, line, showColors ? Color.web(hex) : Color.web("#dddddd"));
         }
+    }
+    
+    private void applyKnotCount() {
+        if (currentPattern == null) return;
+
+        int count;
+        try {
+            count = Integer.parseInt(knotCountField.getText());
+        } catch (NumberFormatException e) {
+            count = DEFAULT_KNOT_ROWS;
+        }
+
+        if (count < 1) count = 1;
+        if (count > MAX_KNOT_ROWS) count = MAX_KNOT_ROWS;
+
+        knotCountField.setText(String.valueOf(count));
+        displayPattern(currentPattern);
     }
     
     private void appendTitle(TextFlow flow, String text) {
