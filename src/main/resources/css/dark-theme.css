@@ -9,7 +9,7 @@
 }
 
 .text-field {
-    -fx-background-color: #2b2b2b;   /* softer gray */
+    -fx-background-color: #2b2b2b;
     -fx-background-radius: 4;
     -fx-border-color: #999999;
     -fx-border-radius: 4;
@@ -19,8 +19,9 @@
 }
 
 .text-field:focused {
-    -fx-background-color: #ffffff;   /* brighten when focused */
+    -fx-background-color: #3a3a3a;
     -fx-border-color: #4a90e2;
+    -fx-text-fill: #ffffff;
 }
 
 .button {
@@ -113,14 +114,14 @@
 }
 
 .results-title {
-    -fx-fill: #888;          /* gray text */
+    -fx-fill: #888;          
     -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
 
 .status-light {
     -fx-font-weight: bold;
-    -fx-text-fill: #ddd; /* base color */
+    -fx-text-fill: #ddd;
 }
 
 .status-light.loading {
@@ -138,3 +139,39 @@
 .status-light.idle {
     -fx-text-fill: grey;
 }
+
+/* Alert */
+.dark-alert {
+    -fx-background-color: #2b2b2b;
+}
+
+.dark-alert .header-panel {
+    -fx-background-color: #2b2b2b;
+    -fx-border-color: #444444;
+    -fx-border-width: 0 0 1 0;
+}
+
+.dark-alert .header-panel .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-alert .content {
+    -fx-background-color: #2b2b2b;
+}
+
+.dark-alert .content .label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.dark-alert .button-bar .button {
+    -fx-background-color: #3a3a3a;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #555555;
+}
+
+.dark-alert .button-bar .button:hover {
+    -fx-background-color: #4a4a4a;
+}
+
+/* /ALERT */
+

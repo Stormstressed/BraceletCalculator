@@ -363,6 +363,15 @@ public class BraceletApp extends Application {
 
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
+        alert.setGraphic(null);
+        // Apply dark theme to the alert
+        DialogPane pane = alert.getDialogPane();
+        URL cssUrl = getClass().getResource("/css/dark-theme.css");
+        if (cssUrl != null) {
+            pane.getStylesheets().add(cssUrl.toExternalForm());
+            pane.getStyleClass().add("dark-alert");
+        }
+
         alert.showAndWait();
     }
 
