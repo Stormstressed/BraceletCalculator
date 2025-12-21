@@ -11,6 +11,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -149,17 +150,21 @@ public class BraceletApp extends Application {
 
 	    loadBtn.setOnAction(e -> handleLoad());
 
-	    // Enter key in ComboBox editor
-	    patternInput.getEditor().setOnKeyPressed(event -> {
+	    patternInput.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
 	        if (event.getCode() == KeyCode.ENTER) {
 	            String typed = patternInput.getEditor().getText().trim();
-	            if (!typed.isEmpty()) handleLoad();
+	            if (!typed.isEmpty()) {
+	                handleLoad();
+	                event.consume(); // prevent popup from eating it
+	            }
 	        }
 	    });
 
-	    // Selecting from dropdown
 	    patternInput.valueProperty().addListener((obs, oldVal, newVal) -> {
 	        if (suppressComboEvents) return;
+
+	        // Ignore commits caused by losing focus
+	        if (!patternInput.isFocused()) return;
 
 	        if (newVal != null && !newVal.isBlank() && !newVal.equals(oldVal)) {
 	            patternInput.getEditor().setText(newVal);
