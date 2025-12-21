@@ -23,13 +23,13 @@ jobs:
         run: |
           curl -L -o javafx.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_windows-x64_bin-sdk.zip
           tar -xf javafx.zip
-          ren openjfx-21.0.9_windows-x64_bin-sdk javafx-sdk
+          ren javafx-sdk-21.0.9 javafx-sdk
 
       - name: Download JavaFX jmods (Windows)
         run: |
           curl -L -o javafx-jmods.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_windows-x64_bin-jmods.zip
           tar -xf javafx-jmods.zip
-          ren openjfx-21.0.9_windows-x64_bin-jmods javafx-jmods
+          ren javafx-jmods-21.0.9 javafx-jmods
 
       - name: Build with Maven
         run: mvn -B package
