@@ -1,9 +1,8 @@
 name: Build Windows Portable App
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
+  release:
+    types: [published]
 
 jobs:
   build-windows:
@@ -41,7 +40,7 @@ jobs:
           --main-jar BraceletCalculator.jar
           --main-class base.BraceletApp
           --module-path "$env:JAVA_HOME\jmods;javafx-jmods"
-          --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base
+          --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,java.base,jdk.crypto.ec
           --win-console
           --dest dist
 
