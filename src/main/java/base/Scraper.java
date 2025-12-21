@@ -9,25 +9,91 @@ import org.jsoup.select.Elements;
 
 
 public class Scraper {
+	
+	private static final String NORMAL_BASE = "https://www.braceletbook.com/patterns/normal/";
+    private static final String ALPHA_BASE  = "https://www.braceletbook.com/patterns/alpha/";
 
     public static Pattern scrapePattern(String idOrUrl,
                                         double desiredLength,
                                         double allowance) {
         try {
-            String url = idOrUrl.matches("\\d+")
-                    ? "https://www.braceletbook.com/patterns/normal/" + idOrUrl + "/"
-                    : idOrUrl;
+        	
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          INPUT SANITATION
+			* +------------------------------------------------------------------------------------
+			*/
 
-            Document pageDoc = Jsoup.connect(url).get();
+            String id;
+            String normalUrl;
+
+            if (idOrUrl.matches("\\d+")) {
+                // Numeric ID
+                id = idOrUrl;
+                normalUrl = NORMAL_BASE + id + "/";
+            } else {
+                // Must be a valid normal URL
+                if (!idOrUrl.matches("^https://www\\.braceletbook\\.com/patterns/normal/\\d+/+$")) {
+                    throw new IllegalArgumentException("Invalid URL format. Only normal pattern URLs are accepted.");
+                }
+
+                // Extract ID from URL
+                id = idOrUrl.replaceAll("\\D+", "");
+                normalUrl = idOrUrl;
+            }
+            
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          NORMAL PATTERN FETCH
+			* +------------------------------------------------------------------------------------
+			*/
+
+
+            Document pageDoc;
+            try {
+                pageDoc = Jsoup.connect(normalUrl).get();
+            } catch (org.jsoup.HttpStatusException e) {
+                if (e.getStatusCode() != 404) {
+                    throw new RuntimeException("HTTP error fetching normal pattern: " + e.getMessage(), e);
+                }
+                pageDoc = null;
+            }
+
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          NORMAL NOT FOUND > CHECK ALPHA
+			* +------------------------------------------------------------------------------------
+			*/
+
+            if (pageDoc == null) {
+                String alphaUrl = ALPHA_BASE + id + "/";
+
+                try {
+                    Jsoup.connect(alphaUrl).get();
+                    // If this succeeds, it's an alpha pattern
+                    throw new IllegalArgumentException("Alpha patterns are not supported");
+                } catch (org.jsoup.HttpStatusException e) {
+                    if (e.getStatusCode() == 404) {
+                        throw new IllegalArgumentException("Pattern not found");
+                    }
+                    throw new RuntimeException("HTTP error fetching alpha pattern: " + e.getMessage(), e);
+                }
+            }
+
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          NORMAL FOUND > SCRAPE
+			* +------------------------------------------------------------------------------------
+			*/
+
             Document svgDoc = fetchSvg(pageDoc);
 
             List<String[]> rows = parseRows(svgDoc);
             Map<Integer, String> colors = parseColors(svgDoc);
             Map<Integer, String> labels = parseLabels(svgDoc);
 
-            // Build Pattern with raw data only
-            return new Pattern(url, colors, labels, rows, desiredLength, allowance);
-
+            return new Pattern(normalUrl, colors, labels, rows, desiredLength, allowance);
+            
         } catch (Exception e) {
             throw new RuntimeException("Error scraping pattern: " + e.getMessage(), e);
         }
