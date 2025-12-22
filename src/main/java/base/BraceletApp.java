@@ -30,19 +30,27 @@ import java.util.Map;
 
 public class BraceletApp extends Application {
 
-	private static final int WINDOW_WIDTH  = 1150;
+	private static final int WINDOW_WIDTH  = 1200;
 	private static final int WINDOW_HEIGHT = 800;
 	private static final int TOAST_TOP_MARGIN = 45;
 	private static final int DEFAULT_KNOT_ROWS = 115;
 	private static final int MAX_KNOT_ROWS = 300;
     private static final Color DEFAULT_COLOR = Color.web("#dddddd");
     
-    private static final Map<Pattern.KnotType, String> KNOT_DISPLAY = Map.of(
-            Pattern.KnotType.F, "F ",
-            Pattern.KnotType.B, "B ",
-            Pattern.KnotType.FB, "FB",
-            Pattern.KnotType.BF, "BF",
-            Pattern.KnotType.BLANK, "· "   // or "_", or " ", or whatever you want
+    private static final Map<Pattern.KnotType, String> TEXT_SYMBOLS = Map.of(
+            Pattern.KnotType.F,      "F",
+            Pattern.KnotType.B,      "B",
+            Pattern.KnotType.FB,     "FB",
+            Pattern.KnotType.BF,     "BF",
+            Pattern.KnotType.BLANK,  "·"
+    );
+
+    private static final Map<Pattern.KnotType, String> DIAMOND_SYMBOLS = Map.of(
+            Pattern.KnotType.F,      "◆",
+            Pattern.KnotType.B,      "◆",
+            Pattern.KnotType.FB,     "◆",
+            Pattern.KnotType.BF,     "◆",
+            Pattern.KnotType.BLANK,  "·"
     );
 
 	private Stage stage;
@@ -57,6 +65,8 @@ public class BraceletApp extends Application {
     private Button copyPatternBtn;
     private Button copyResultsBtn;
     private Button deleteBtn;
+    Button toggleSymbolsBtn;
+    private boolean useDiamondSymbols = true;
     
     //search id
     private TextField searchField;
@@ -108,6 +118,7 @@ public class BraceletApp extends Application {
         copyPatternBtn = new Button("Copy Pattern");
         copyResultsBtn = new Button("Copy Results");
         deleteBtn = new Button("Delete");
+        toggleSymbolsBtn = new Button("Diamonds");
 
         allowanceField = new TextField();
         lengthField    = new TextField();
@@ -129,6 +140,7 @@ public class BraceletApp extends Application {
         	    10,
         	    searchField,
         	    loadBtn,
+        	    toggleSymbolsBtn,
         	    copyPatternBtn,
         	    copyResultsBtn,
         	    deleteBtn,
@@ -172,6 +184,14 @@ public class BraceletApp extends Application {
 	private void wireEvents() {
 
 	    loadBtn.setOnAction(e -> handleLoad());
+	    
+	    toggleSymbolsBtn.setOnAction(e -> {
+	        useDiamondSymbols = !useDiamondSymbols;
+	        toggleSymbolsBtn.setText(useDiamondSymbols ? "Diamonds" : "Text");
+	        if (currentPattern != null) {
+	            displayPattern(currentPattern);
+	        }
+	    });
 	    
 	    scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
 	        // Only care when the search field is focused
@@ -433,7 +453,10 @@ public class BraceletApp extends Application {
                         ? Color.web(AnsiColor.brightenIfDark(hex))
                         : DEFAULT_COLOR;
 
-                String display = KNOT_DISPLAY.getOrDefault(cell.knot(), "?");
+                Map<Pattern.KnotType, String> activeMap =
+                        useDiamondSymbols ? DIAMOND_SYMBOLS : TEXT_SYMBOLS;
+
+                String display = activeMap.getOrDefault(cell.knot(), "?") + " ";
 
                 Text t = new Text(display + " ");
                 t.setFill(fxColor);

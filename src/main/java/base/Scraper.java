@@ -22,8 +22,11 @@ public class Scraper {
             Debug.log("Scrape start: " + idOrUrl);
 
             /*
-             * INPUT SANITATION
-             */
+			* +------------------------------------------------------------------------------------
+			* |          INPUT SANITATION
+			* +------------------------------------------------------------------------------------
+			*/
+
             if (idOrUrl.matches("\\d+")) {
                 id = idOrUrl;
                 normalUrl = NORMAL_BASE + id + "/";
@@ -39,8 +42,11 @@ public class Scraper {
             Debug.log("Normal URL = " + normalUrl);
 
             /*
-             * FETCH NORMAL PAGE
-             */
+			* +------------------------------------------------------------------------------------
+			* |          FETCH NORMAL PAGE
+			* +------------------------------------------------------------------------------------
+			*/
+
             Document pageDoc;
             try {
                 pageDoc = Jsoup.connect(normalUrl).get();
@@ -52,8 +58,11 @@ public class Scraper {
             }
 
             /*
-             * FALLBACK TO ALPHA
-             */
+			* +------------------------------------------------------------------------------------
+			* |          FALLBACK TO ALPHA
+			* +------------------------------------------------------------------------------------
+			*/
+
             if (pageDoc == null) {
                 Debug.log("Normal pattern not found, checking alpha…");
                 String alphaUrl = ALPHA_BASE + id + "/";
@@ -69,8 +78,11 @@ public class Scraper {
             }
 
             /*
-             * SCRAPE SVG
-             */
+			* +------------------------------------------------------------------------------------
+			* |          SCRAPE SVG
+			* +------------------------------------------------------------------------------------
+			*/
+
             Document svgDoc = fetchSvg(pageDoc);
             Debug.log("SVG fetched");
 
@@ -86,18 +98,16 @@ public class Scraper {
             Debug.log("Parsed labels: " + labels);
             Debug.log("Parsed colors: " + colors);
 
-            /*
-             * BUILD label → color map
-             */
+            //BUILD label > color map
             Map<String, String> labelToColor = new LinkedHashMap<>();
             for (int i = 1; i <= labels.size(); i++) {
                 labelToColor.put(labels.get(i), colors.get(i));
             }
             Debug.log("Label→Color map: " + labelToColor);
 
-            /*
-             * BUILD per‑string list
-             */
+            
+            //BUILD per‑string list
+            
             List<Pattern.StringInfo> strings = new ArrayList<>();
             for (int i = 1; i <= labels.size(); i++) {
                 strings.add(new Pattern.StringInfo(
@@ -109,9 +119,7 @@ public class Scraper {
             }
             Debug.log("String list size: " + strings.size());
 
-            /*
-             * BUILD KnotCell rows
-             */
+            //BUILD KnotCell rows
             List<List<Pattern.KnotCell>> rows = new ArrayList<>();
             for (int r = 0; r < knotRows.size(); r++) {
                 Pattern.KnotType[] types = knotRows.get(r);
@@ -125,9 +133,7 @@ public class Scraper {
             }
             Debug.log("Built KnotCell rows: " + rows.size());
 
-            /*
-             * CONSTRUCT PATTERN
-             */
+            //CONSTRUCT PATTERN
             Debug.log("Scrape complete.");
             return new Pattern(id, normalUrl, labelToColor, strings, rows, desiredLength, allowance);
 
@@ -144,9 +150,7 @@ public class Scraper {
         return Jsoup.connect(object.attr("data")).get();
     }
 
-    /*
-     * PARSE KNOT TYPES
-     */
+    //PARSE KNOT TYPES
     private static List<Pattern.KnotType[]> parseKnotRows(Document svgDoc) {
         Map<Integer, List<Pattern.KnotType>> rowMap = new TreeMap<>();
 
@@ -187,9 +191,7 @@ public class Scraper {
         return rows;
     }
 
-    /*
-     * PARSE KNOT LABELS (kk-X)
-     */
+    //PARSE KNOT LABELS (kk-X)
     private static List<String[]> parseKnotLabels(Document svgDoc) {
         Map<Integer, List<String>> rowMap = new TreeMap<>();
 
@@ -221,9 +223,7 @@ public class Scraper {
         return rows;
     }
 
-    /*
-     * PARSE STRING COLORS
-     */
+    //PARSE STRING COLORS
     private static Map<Integer, String> parseColors(Document svgDoc) {
         Map<String, String> palette = parsePalette(svgDoc);
         Map<Integer, String> colors = new HashMap<>();
@@ -256,9 +256,7 @@ public class Scraper {
         return colors;
     }
 
-    /*
-     * PARSE STRING LABELS (A, B, C…)
-     */
+    //PARSE STRING LABELS (A, B, C…)
     private static Map<Integer, String> parseLabels(Document svgDoc) {
         Map<Integer, String> labels = new HashMap<>();
         Elements stringGroups = svgDoc.select("g.s");
@@ -296,9 +294,7 @@ public class Scraper {
         return labels;
     }
 
-    /*
-     * PARSE PALETTE (s1-a → #hex)
-     */
+    //PARSE PALETTE (s1-a → #hex)
     private static Map<String, String> parsePalette(Document svgDoc) {
         Map<String, String> out = new HashMap<>();
 

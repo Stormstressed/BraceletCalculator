@@ -89,23 +89,19 @@ public class Pattern {
 	    this.valid = valid;
 	}
 
-
 	// Getters
     public String getId() { return id; }
     public String getUrl() { return url; }
     public List<StringInfo> getStrings() { return strings; }
     public Map<String, String> getLabelToColor() { return labelToColor; }
     public List<List<KnotCell>> getRows() { return rows; }
-
     public Map<Integer, Integer> getTally() { return tally; }
     public Map<Integer, Double> getStringLengths() { return stringLengths; }
     public Map<String, Double> getColorLengths() { return colorLengths; }
     public List<Integer> getFinalOrder() { return finalOrder; }
-
     public int getRepeats() { return repeats; }
     public int getTotalRows() { return totalRows; }
     public boolean isValid() { return valid; }
-
     public double getDesiredBraceletLength() { return desiredBraceletLength; }
     public double getAllowance() { return allowance; }
 
