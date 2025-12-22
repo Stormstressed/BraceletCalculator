@@ -3,12 +3,10 @@ package base;
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -167,16 +165,59 @@ public class BraceletApp extends Application {
 	    loadBtn.setOnAction(e -> handleLoad());
 	    
 	    scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-	        if (e.getCode() == KeyCode.ENTER) {
-	            // Only trigger when the search field is focused
-	            if (searchField.isFocused()) {
-	                String typed = searchField.getText().trim();
-	                if (!typed.isEmpty()) {
-	                    handleLoad();
+	        // Only care when the search field is focused
+	        if (!searchField.isFocused()) {
+	            return;
+	        }
+
+	        // DOWN: move selection inside the list, but keep focus on the field
+	        if (e.getCode() == KeyCode.DOWN) {
+	            if (!searchList.getItems().isEmpty() && searchPopup.isShowing()) {
+	                int size = searchList.getItems().size();
+	                int idx = searchList.getSelectionModel().getSelectedIndex();
+
+	                if (idx < 0) {
+	                    idx = 0;               // first DOWN: first item
+	                } else if (idx < size - 1) {
+	                    idx = idx + 1;         // subsequent DOWN: next item
 	                }
-	                searchPopup.hide();
-	                e.consume(); // prevent anything else from seeing ENTER
+
+	                searchList.getSelectionModel().clearAndSelect(idx);
+	                e.consume();
 	            }
+	            return;
+	        }
+
+	        // ENTER: prefer selected item; fall back to typed value
+	        if (e.getCode() == KeyCode.ENTER) {
+	            String chosen = null;
+
+	            if (searchPopup.isShowing()) {
+	                chosen = searchList.getSelectionModel().getSelectedItem();
+	            }
+
+	            if (chosen != null) {
+	                searchField.setText(chosen);
+	            }
+
+	            String typed = searchField.getText().trim();
+	            if (!typed.isEmpty()) {
+	                handleLoad();
+	            }
+
+	            searchPopup.hide();
+	            e.consume();
+	        }
+	    });
+	    
+	    searchField.addEventFilter(MouseEvent.MOUSE_CLICKED, e -> {
+	        if (e.getClickCount() == 2) {
+	            // Reset selection state so ENTER works again
+	            Platform.runLater(() -> {
+	                searchField.selectEnd();   // collapse selection
+	                searchField.positionCaret(searchField.getText().length());
+	                searchField.requestFocus();
+	            });
 	        }
 	    });
 
@@ -200,31 +241,15 @@ public class BraceletApp extends Application {
 	    });
 	    
 	    searchField.focusedProperty().addListener((obs, old, focused) -> {
-	        if (focused) {
-	            searchList.getItems().setAll(allIds);
-	            showSearchPopup();
-	        } else {
+	        if (!focused) {
 	            searchPopup.hide();
 	        }
 	    });
 	    
-	    searchList.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-	        if (e.getCode() == KeyCode.ENTER) {
-	            String selected = searchList.getSelectionModel().getSelectedItem();
-	            if (selected != null) {
-	                searchField.setText(selected);
-	                handleLoad();
-	            }
-
-	            searchPopup.hide();
-
-	            // Reset list to full set
+	    searchField.addEventHandler(MouseEvent.MOUSE_PRESSED, e -> {
+	        if (!searchPopup.isShowing()) {
 	            searchList.getItems().setAll(allIds);
-
-	            // Return focus to the field
-	            searchField.requestFocus();
-
-	            e.consume();
+	            showSearchPopup();
 	        }
 	    });
 	    
