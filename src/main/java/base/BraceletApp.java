@@ -38,11 +38,11 @@ public class BraceletApp extends Application {
     private static final Color DEFAULT_COLOR = Color.web("#dddddd");
     
     private static final Map<Pattern.KnotType, String> TEXT_SYMBOLS = Map.of(
-            Pattern.KnotType.F,      "F",
-            Pattern.KnotType.B,      "B",
+            Pattern.KnotType.F,      "F ",
+            Pattern.KnotType.B,      "B ",
             Pattern.KnotType.FB,     "FB",
             Pattern.KnotType.BF,     "BF",
-            Pattern.KnotType.BLANK,  "·"
+            Pattern.KnotType.BLANK,  "··"
     );
 
     private static final Map<Pattern.KnotType, String> DIAMOND_SYMBOLS = Map.of(
@@ -50,7 +50,7 @@ public class BraceletApp extends Application {
             Pattern.KnotType.B,      "◆",
             Pattern.KnotType.FB,     "◆",
             Pattern.KnotType.BF,     "◆",
-            Pattern.KnotType.BLANK,  "·"
+            Pattern.KnotType.BLANK,  "◇"
     );
 
 	private Stage stage;
@@ -104,7 +104,7 @@ public class BraceletApp extends Application {
     	//search
     	searchField = new TextField();
     	searchField.setPromptText("Enter pattern ID or URL");
-    	searchField.setPrefWidth(200);
+    	searchField.setPrefWidth(150);
 
     	searchList = new ListView<>();
     	searchList.setPrefHeight(150);
@@ -128,6 +128,7 @@ public class BraceletApp extends Application {
         lengthField.setPrefWidth(80);
         knotCountField.setPrefWidth(80);
         deleteBtn.setPrefWidth(80);
+        toggleSymbolsBtn.setPrefWidth(80);
 
         Label allowanceLabel = new Label("Extra allowance:");
         Label lengthLabel    = new Label("Length:");
