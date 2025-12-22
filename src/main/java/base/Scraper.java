@@ -110,12 +110,7 @@ public class Scraper {
             
             List<Pattern.StringInfo> strings = new ArrayList<>();
             for (int i = 1; i <= labels.size(); i++) {
-                strings.add(new Pattern.StringInfo(
-                    i,
-                    labels.get(i),
-                    0,
-                    0.0
-                ));
+                strings.add(new Pattern.StringInfo(i, labels.get(i)));
             }
             Debug.log("String list size: " + strings.size());
 

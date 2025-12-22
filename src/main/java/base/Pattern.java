@@ -25,7 +25,7 @@ public class Pattern {
     private boolean valid;
 
     // Records
-    public record StringInfo( int id, String label, int tally, double length) {}
+    public record StringInfo( int id, String label) {}
 
     public record KnotCell(KnotType knot, String label) {}
 
