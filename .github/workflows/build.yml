@@ -48,7 +48,11 @@ jobs:
           --icon src/main/resources/icon.ico
           --dest dist
 
-      - name: Upload portable app to release
+      - name: Zip portable app
+        run: |
+          powershell Compress-Archive -Path dist/BraceletCalculator -DestinationPath BraceletCalculator.zip
+
+      - name: Upload ZIP to release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/BraceletCalculator/**
+          files: BraceletCalculator.zip
