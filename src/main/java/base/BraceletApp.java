@@ -2,9 +2,13 @@ package base;
 
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -12,6 +16,7 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -35,7 +40,7 @@ public class BraceletApp extends Application {
 	private static final int MAX_KNOT_ROWS = 300;
 
 	private Stage stage;
-    private ComboBox<String> patternInput;
+	private Scene scene;
     private TextFlow patternFlow;
     private TextFlow resultsFlow;
     private Label statusLight;
@@ -46,13 +51,15 @@ public class BraceletApp extends Application {
     private Button copyPatternBtn;
     private Button copyResultsBtn;
     private Button deleteBtn;
+    
+    //search id
+    private TextField searchField;
+    private PopupControl searchPopup;
+    private ListView<String> searchList;
+    private List<String> allIds;
 
-    private boolean suppressComboEvents = false;
     private boolean showColors = true;
     private Pattern currentPattern;
-
-    // keep a master list for filtering
-    private List<String> allIds = new ArrayList<>();
 
     @Override
     public void start(Stage stage) {
@@ -61,7 +68,7 @@ public class BraceletApp extends Application {
         Parent ui = buildUI();
         StackPane stack = new StackPane(ui);  // overlay layer for toast
 
-        Scene scene = new Scene(stack, WINDOW_WIDTH, WINDOW_HEIGHT);
+        scene = new Scene(stack, WINDOW_WIDTH, WINDOW_HEIGHT);
 
         URL cssUrl = getClass().getResource("/css/dark-theme.css");
         if (cssUrl != null) {
@@ -77,11 +84,19 @@ public class BraceletApp extends Application {
     }
 	
     private Parent buildUI() {
-        // Inputs
-        patternInput = new ComboBox<>();
-        patternInput.setEditable(true);
-        patternInput.setPromptText("Enter pattern ID or URL");
+    	//search
+    	searchField = new TextField();
+    	searchField.setPromptText("Enter pattern ID or URL");
+    	searchField.setPrefWidth(200);
 
+    	searchList = new ListView<>();
+    	searchList.setPrefHeight(150);
+
+    	searchPopup = new PopupControl();
+    	searchPopup.setAutoHide(false);
+    	searchPopup.getScene().setRoot(searchList);
+
+    	// Inputs
         loadBtn = new Button("Load");
         copyPatternBtn = new Button("Copy Pattern");
         copyResultsBtn = new Button("Copy Results");
@@ -104,17 +119,18 @@ public class BraceletApp extends Application {
         statusLight.getStyleClass().addAll("status-light", "idle");
 
         HBox topBar = new HBox(
-            10,
-            patternInput,
-            loadBtn,
-            copyPatternBtn,
-            copyResultsBtn,
-            deleteBtn,
-            allowanceLabel, allowanceField,
-            lengthLabel, lengthField,
-            knotCountLabel, knotCountField,
-            statusLight
-        );
+        	    10,
+        	    searchField,
+        	    loadBtn,
+        	    copyPatternBtn,
+        	    copyResultsBtn,
+        	    deleteBtn,
+        	    allowanceLabel, allowanceField,
+        	    lengthLabel, lengthField,
+        	    knotCountLabel, knotCountField,
+        	    statusLight
+        	);
+
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
@@ -149,27 +165,76 @@ public class BraceletApp extends Application {
 	private void wireEvents() {
 
 	    loadBtn.setOnAction(e -> handleLoad());
-
-	    patternInput.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-	        if (event.getCode() == KeyCode.ENTER) {
-	            String typed = patternInput.getEditor().getText().trim();
-	            if (!typed.isEmpty()) {
-	                handleLoad();
-	                event.consume(); // prevent popup from eating it
+	    
+	    scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+	        if (e.getCode() == KeyCode.ENTER) {
+	            // Only trigger when the search field is focused
+	            if (searchField.isFocused()) {
+	                String typed = searchField.getText().trim();
+	                if (!typed.isEmpty()) {
+	                    handleLoad();
+	                }
+	                searchPopup.hide();
+	                e.consume(); // prevent anything else from seeing ENTER
 	            }
 	        }
 	    });
 
-	    patternInput.valueProperty().addListener((obs, oldVal, newVal) -> {
-	        if (suppressComboEvents) return;
+	    searchField.textProperty().addListener((obs, old, text) -> {
+	        if (text == null || text.isBlank()) {
+	            searchList.getItems().setAll(allIds);
+	            showSearchPopup();
+	            return;
+	        }
 
-	        // Ignore commits caused by losing focus
-	        if (!patternInput.isFocused()) return;
+	        List<String> matches = allIds.stream()
+	                .filter(id -> id.contains(text))
+	                .toList();
 
-	        if (newVal != null && !newVal.isBlank() && !newVal.equals(oldVal)) {
-	            patternInput.getEditor().setText(newVal);
+	        if (!matches.isEmpty()) {
+	            searchList.getItems().setAll(matches);
+	            showSearchPopup();
+	        } else {
+	            searchPopup.hide();
+	        }
+	    });
+	    
+	    searchField.focusedProperty().addListener((obs, old, focused) -> {
+	        if (focused) {
+	            searchList.getItems().setAll(allIds);
+	            showSearchPopup();
+	        } else {
+	            searchPopup.hide();
+	        }
+	    });
+	    
+	    searchList.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+	        if (e.getCode() == KeyCode.ENTER) {
+	            String selected = searchList.getSelectionModel().getSelectedItem();
+	            if (selected != null) {
+	                searchField.setText(selected);
+	                handleLoad();
+	            }
+
+	            searchPopup.hide();
+
+	            // Reset list to full set
+	            searchList.getItems().setAll(allIds);
+
+	            // Return focus to the field
+	            searchField.requestFocus();
+
+	            e.consume();
+	        }
+	    });
+	    
+	    searchList.setOnMouseClicked(e -> {
+	        String selected = searchList.getSelectionModel().getSelectedItem();
+	        if (selected != null) {
+	            searchField.setText(selected);
 	            handleLoad();
 	        }
+	        searchPopup.hide();
 	    });
 
 	    copyPatternBtn.setOnAction(e -> {
@@ -228,7 +293,7 @@ public class BraceletApp extends Application {
 	    });
 	    
 	    deleteBtn.setOnAction(e -> {
-	        String id = patternInput.getEditor().getText().trim();
+	        String id = searchField.getText();
 	        if (id.isEmpty()) {
 	        	showToast("Select a pattern first");
 	            return;
@@ -280,7 +345,7 @@ public class BraceletApp extends Application {
 	}
 
     private void handleLoad() {
-        String idOrUrl = patternInput.getEditor().getText().trim();
+        String idOrUrl = searchField.getText();
         if (idOrUrl.isEmpty()) {
             showError("Please enter a pattern ID or URL.");
             return;
@@ -451,29 +516,17 @@ public class BraceletApp extends Application {
     }
 
     private void refreshSavedIds() {
-        String typed = patternInput.getEditor().getText();
+        allIds = new ArrayList<>(PatternStorage.getSavedIds());
 
-        suppressComboEvents = true;
-        try {
-            allIds = new ArrayList<>(PatternStorage.getSavedIds());
-
-            allIds.sort((a, b) -> {
-                try {
-                    return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
-                } catch (NumberFormatException e) {
-                    return a.compareToIgnoreCase(b);
-                }
-            });
-
-            patternInput.getItems().setAll(allIds);
-
-            patternInput.getEditor().setText(typed);
-            patternInput.setValue(typed);
-
-        } finally {
-            suppressComboEvents = false;
-        }
+        allIds.sort((a, b) -> {
+            try {
+                return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
+            } catch (NumberFormatException e) {
+                return a.compareToIgnoreCase(b);
+            }
+        });
     }
+
     
     private void showToast(String message) {
         Label toast = new Label(message);
@@ -491,6 +544,17 @@ public class BraceletApp extends Application {
         fade.setOnFinished(ev -> root.getChildren().remove(toast));
         fade.play();
     }
+    
+    private void showSearchPopup() {
+        if (allIds == null || allIds.isEmpty()) {
+            searchPopup.hide();
+            return;
+        }
+
+        Bounds b = searchField.localToScreen(searchField.getBoundsInLocal());
+        searchPopup.show(searchField, b.getMinX(), b.getMaxY());
+        searchField.requestFocus(); // critical: keep keyboard focus on the field
+    }
 
     private void resetUI() {
         currentPattern = null;
@@ -500,7 +564,6 @@ public class BraceletApp extends Application {
         resultsFlow.getChildren().clear();
 
         // Clear all text fields
-        patternInput.getEditor().clear();
         allowanceField.clear();
         lengthField.clear();
         knotCountField.clear();
