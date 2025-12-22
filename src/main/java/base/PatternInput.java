@@ -40,7 +40,7 @@ public class PatternInput {
             colors.put(i, labelColorMap.get(label));
         }
 
-        return new Pattern("manual", colors, labels, rows, desiredLength, allowance);
+        return new Pattern("manual","null", colors, labels, rows, desiredLength, allowance);
     }
 
     private static String normalizeLabel(String s) {

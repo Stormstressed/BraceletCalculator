@@ -385,7 +385,7 @@ public class BraceletApp extends Application {
                 if (p == null) {
                     p = Scraper.scrapePattern(idOrUrl, 15.0, 30.0);
                     PatternAnalyzer.analyze(p);
-                    PatternStorage.savePattern(p, idOrUrl);
+                    PatternStorage.savePattern(p);
                 }
                 return p;
             }
@@ -402,6 +402,7 @@ public class BraceletApp extends Application {
             // also refresh the text fields with the pattern values
             allowanceField.setText(String.valueOf(currentPattern.getAllowance()));
             lengthField.setText(String.valueOf(currentPattern.getDesiredBraceletLength()));
+            searchField.setText(currentPattern.getId());
         });
 
         task.setOnFailed(ev -> {
@@ -413,6 +414,7 @@ public class BraceletApp extends Application {
         new Thread(task, "load-pattern").start();
     }
 
+    //changes both textflows
     private void displayPattern(Pattern pattern) {
     	patternFlow.getChildren().clear();
         resultsFlow.getChildren().clear();

@@ -5,7 +5,8 @@ import java.util.*;
 public class Pattern {
 
     // Raw inputs
-    private String id;
+    private String id; 
+    private String url;
     private Map<Integer, String> colors = new HashMap<>();
     private Map<Integer, String> labels = new HashMap<>();
     private List<String[]> knotRows = new ArrayList<>();
@@ -30,12 +31,14 @@ public class Pattern {
     public Pattern() { }
 
     public Pattern(String id,
+    			   String url,
                    Map<Integer, String> colors,
                    Map<Integer, String> labels,
                    List<String[]> knotRows,
                    double desiredBraceletLength,
                    double allowance) {
         this.id = id;
+        this.url = url;
         this.colors = colors;
         this.labels = labels;
         this.knotRows = knotRows;
@@ -45,6 +48,7 @@ public class Pattern {
 
     // --- Getters ---
     public String getId() { return id; }
+    public String getUrl() { return url; }
     public Map<Integer, String> getColors() { return colors; }
     public Map<Integer, String> getLabels() { return labels; }
     public List<String[]> getKnotRows() { return knotRows; }
@@ -61,6 +65,7 @@ public class Pattern {
 
     // --- Setters (only for inputs/parameters) ---
     public void setId(String id) { this.id = id; }
+    public void setUrl(String url) { this.url = url; }
     public void setColors(Map<Integer, String> colors) { this.colors = colors; }
     public void setLabels(Map<Integer, String> labels) { this.labels = labels; }
     public void setKnotRows(List<String[]> knotRows) { this.knotRows = knotRows; }

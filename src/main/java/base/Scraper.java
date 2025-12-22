@@ -92,7 +92,7 @@ public class Scraper {
             Map<Integer, String> colors = parseColors(svgDoc);
             Map<Integer, String> labels = parseLabels(svgDoc);
 
-            return new Pattern(normalUrl, colors, labels, rows, desiredLength, allowance);
+            return new Pattern(id, normalUrl, colors, labels, rows, desiredLength, allowance);
             
         } catch (Exception e) {
             throw new RuntimeException("Error scraping pattern: " + e.getMessage(), e);

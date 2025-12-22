@@ -34,8 +34,8 @@ public class PatternStorage {
         }
     }
 
-    public static void savePattern(Pattern pattern, String id) throws IOException {
-        cache.put(id, pattern);
+    public static void savePattern(Pattern pattern) throws IOException {
+        cache.put(pattern.getId(), pattern);
         mapper.writeValue(new File(STORAGE_FILE), cache);
     }
 
