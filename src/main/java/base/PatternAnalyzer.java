@@ -139,4 +139,100 @@ public class PatternAnalyzer {
         pattern.setColorLengths(colorLengths);
         pattern.setValid(valid);
     }
+    
+    public static List<List<Pattern.KnotCell>> expandPatternRows(
+            Pattern pattern,
+            int loops
+    ) {
+        List<List<Pattern.KnotCell>> originalRows = pattern.getRows();
+        int numStrings = pattern.getStrings().size();
+
+        // initial order: 1..N
+        List<Integer> order = new ArrayList<>(numStrings);
+        for (int i = 1; i <= numStrings; i++) order.add(i);
+
+        List<List<Pattern.KnotCell>> result = new ArrayList<>();
+
+        for (int loop = 0; loop < loops; loop++) {
+
+            for (int rowIndex = 0; rowIndex < originalRows.size(); rowIndex++) {
+
+                List<Pattern.KnotCell> srcRow = originalRows.get(rowIndex);
+                List<Pattern.KnotCell> outRow = new ArrayList<>();
+
+                boolean unusedLeft;
+                boolean unusedRight;
+
+                if (numStrings % 2 == 0) {
+                    // EVEN number of strings
+                    unusedLeft = (rowIndex % 2 == 1);
+                    unusedRight = (rowIndex % 2 == 1);
+                } else {
+                    // ODD number of strings
+                    unusedRight = (rowIndex % 2 == 0);
+                    unusedLeft  = !unusedRight;
+                }
+
+                int startPos = unusedLeft ? 1 : 0;
+                int usableStrings = numStrings
+                        - (unusedLeft ? 1 : 0)
+                        - (unusedRight ? 1 : 0);
+                int pairsThisRow = usableStrings / 2;
+
+                for (int k = 0; k < pairsThisRow; k++) {
+
+                    int posLeft = startPos + 2 * k;
+                    int posRight = posLeft + 1;
+
+                    int leftId = order.get(posLeft);
+                    int rightId = order.get(posRight);
+
+                    Pattern.KnotCell srcCell = srcRow.get(k);
+                    Pattern.KnotType knot = srcCell.knot();
+
+                    String label;
+
+                    switch (knot) {
+                        case F -> {
+                            // use left color
+                            String leftLabel = pattern.getStrings().get(leftId - 1).label();
+                            label = pattern.getLabelToColor().get(leftLabel);
+                            Collections.swap(order, posLeft, posRight);
+                        }
+                        case B -> {
+                            // use right color
+                            String rightLabel = pattern.getStrings().get(rightId - 1).label();
+                            label = pattern.getLabelToColor().get(rightLabel);
+                            Collections.swap(order, posLeft, posRight);
+                        }
+                        case FB -> {
+                            // use left color, no swap
+                            String leftLabel = pattern.getStrings().get(leftId - 1).label();
+                            label = pattern.getLabelToColor().get(leftLabel);
+                        }
+                        case BF -> {
+                            // use right color, no swap
+                            String rightLabel = pattern.getStrings().get(rightId - 1).label();
+                            label = pattern.getLabelToColor().get(rightLabel);
+                        }
+                        case BLANK -> {
+                            // no color, no swap
+                            label = "0";
+                        }
+                        case UNKNOWN -> {
+                            // safest fallback: preserve original label
+                            label = srcCell.label();
+                        }
+                        default -> throw new IllegalStateException("Unexpected knot type");
+                    }
+
+                    outRow.add(new Pattern.KnotCell(knot, label));
+                }
+
+                result.add(outRow);
+            }
+        }
+
+        return result;
+    }
 }

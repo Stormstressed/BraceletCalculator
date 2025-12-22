@@ -195,7 +195,7 @@ public class BraceletApp extends Application {
 	    });
 	    
 	    scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-	        // Only care when the search field is focused
+
 	        if (!searchField.isFocused()) {
 	            return;
 	        }
@@ -207,9 +207,9 @@ public class BraceletApp extends Application {
 	                int idx = searchList.getSelectionModel().getSelectedIndex();
 
 	                if (idx < 0) {
-	                    idx = 0;               // first DOWN: first item
+	                    idx = 0;
 	                } else if (idx < size - 1) {
-	                    idx = idx + 1;         // subsequent DOWN: next item
+	                    idx = idx + 1;
 	                }
 
 	                searchList.getSelectionModel().clearAndSelect(idx);
@@ -408,8 +408,6 @@ public class BraceletApp extends Application {
             refreshSavedIds();
 
             knotCountField.setText(String.valueOf(DEFAULT_KNOT_ROWS));
-            
-            // also refresh the text fields with the pattern values
             allowanceField.setText(String.valueOf(currentPattern.getAllowance()));
             lengthField.setText(String.valueOf(currentPattern.getDesiredBraceletLength()));
             searchField.setText(currentPattern.getId());
@@ -438,17 +436,72 @@ public class BraceletApp extends Application {
             targetRows = 100;
         }
 
-        List<List<Pattern.KnotCell>> rows = pattern.getRows();
+        int baseRows = pattern.getRows().size();
+        int loops = (int) Math.ceil((double) targetRows / baseRows);
 
-        //patternflow loop
+        List<List<Pattern.KnotCell>> expanded = PatternAnalyzer.expandPatternRows(pattern, loops);
+
+        int numStrings = pattern.getStrings().size();
+
+        // patternflow loop
         for (int rowIndex = 0; rowIndex < targetRows; rowIndex++) {
-            List<Pattern.KnotCell> row = rows.get(rowIndex % rows.size());
+
+            List<Pattern.KnotCell> row = expanded.get(rowIndex);
+
+            boolean oddStrings = (numStrings % 2 == 1);
+
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          ODD STRING COUNT > STAGGERING
+			* +------------------------------------------------------------------------------------
+			*/
+
+            if (oddStrings) {
+
+                if (rowIndex % 2 == 1) {
+                    patternFlow.getChildren().add(new Text("  "));
+                }
+
+                // Render knots
+                for (Pattern.KnotCell cell : row) {
+
+                    String label = cell.label();
+                    String hex = (label == null) ? null : label;
+                    if (hex == null || hex.equals("0")) hex = "#dddddd";
+
+                    Color fxColor = showColors
+                            ? Color.web(AnsiColor.brightenIfDark(hex))
+                            : DEFAULT_COLOR;
+
+                    Map<Pattern.KnotType, String> activeMap = useDiamondSymbols ? DIAMOND_SYMBOLS : TEXT_SYMBOLS;
+
+                    String display = activeMap.getOrDefault(cell.knot(), "?") + " ";
+
+                    Text t = new Text(display + " ");
+                    t.setFill(fxColor);
+                    patternFlow.getChildren().add(t);
+                }
+
+                if (rowIndex % 2 == 0) {
+                    patternFlow.getChildren().add(new Text("  "));
+                }
+
+                patternFlow.getChildren().add(new Text("\n"));
+                continue;
+            }
+
+            /*
+			* +------------------------------------------------------------------------------------
+			* |          EVEN STRING COUNT > NO OFFSET
+			* +------------------------------------------------------------------------------------
+			*/
 
             for (Pattern.KnotCell cell : row) {
-                String label    = cell.label();   // "a", "b", ..., or "0"
 
-                String hex = (label == null) ? null : pattern.getLabelToColor().get(label);
-                if (hex == null) hex = "#dddddd";
+                String label = cell.label();
+
+                String hex = (label == null) ? null : label;
+                if (hex == null || hex.equals("0")) hex = "#dddddd";
 
                 Color fxColor = showColors
                         ? Color.web(AnsiColor.brightenIfDark(hex))
@@ -467,12 +520,17 @@ public class BraceletApp extends Application {
             patternFlow.getChildren().add(new Text("\n"));
         }
 
+        /*
+		* +------------------------------------------------------------------------------------
+		* |          RESULTS
+		* +------------------------------------------------------------------------------------
+		*/
+
         String results = buildResultsText(pattern);
 
         for (String line : results.split("\n")) {
             Text t = new Text(line + "\n");
 
-            // Extract hex if present
             String trimmed = line.trim();
             Color fxColor = DEFAULT_COLOR;
 
@@ -488,6 +546,8 @@ public class BraceletApp extends Application {
             resultsFlow.getChildren().add(t);
         }
     }
+
+
 
     private String buildResultsText(Pattern p) {
         StringBuilder sb = new StringBuilder();
@@ -534,8 +594,7 @@ public class BraceletApp extends Application {
                 sb.append("\n");
             }
         }
-
-        // Ensure trailing newline
+        //break the line
         if (count % 5 != 0) {
             sb.append("\n");
         }
@@ -622,36 +681,28 @@ public class BraceletApp extends Application {
 
         Bounds b = searchField.localToScreen(searchField.getBoundsInLocal());
         searchPopup.show(searchField, b.getMinX(), b.getMaxY());
-        searchField.requestFocus(); // critical: keep keyboard focus on the field
+        searchField.requestFocus();
     }
 
     private void resetUI() {
         currentPattern = null;
-
-        // Clear TextFlows
         patternFlow.getChildren().clear();
         resultsFlow.getChildren().clear();
-
-        // Clear all text fields
         allowanceField.clear();
         lengthField.clear();
         knotCountField.clear();
-
-        // Reset status
         setStatus("idle");
     }
 
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
         alert.setGraphic(null);
-        // Apply dark theme to the alert
         DialogPane pane = alert.getDialogPane();
         URL cssUrl = getClass().getResource("/css/dark-theme.css");
         if (cssUrl != null) {
             pane.getStylesheets().add(cssUrl.toExternalForm());
             pane.getStyleClass().add("dark-alert");
         }
-
         alert.showAndWait();
     }
 

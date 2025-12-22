@@ -106,7 +106,7 @@ public class Scraper {
             Debug.log("Label→Color map: " + labelToColor);
 
             
-            //BUILD per‑string list
+            //BUILD per string list
             
             List<Pattern.StringInfo> strings = new ArrayList<>();
             for (int i = 1; i <= labels.size(); i++) {
@@ -202,7 +202,7 @@ public class Scraper {
 
             for (String cls : shape.classNames()) {
                 if (cls.startsWith("kk-") && cls.length() > 3) {
-                    knotLabel = cls.substring(3).toUpperCase(Locale.ROOT); // <-- FIX HERE
+                    knotLabel = cls.substring(3).toUpperCase(Locale.ROOT);
                     break;
                 }
             }
