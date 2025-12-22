@@ -2,89 +2,123 @@ package base;
 
 import java.util.*;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Pattern {
 
-    // Raw inputs
-    private String id; 
-    private String url;
-    private Map<Integer, String> colors = new HashMap<>();
-    private Map<Integer, String> labels = new HashMap<>();
-    private List<String[]> knotRows = new ArrayList<>();
-    private List<List<String[]>> knotLabelRows = new ArrayList<>();
-
-    // Parameters
+    private final String id;
+    private final String url;
     private double desiredBraceletLength;
     private double allowance;
+    private List<StringInfo> strings;
+    private Map<String, String> labelToColor;
+    private List<List<KnotCell>> rows;
 
-    // Computed outputs
-    private Map<Integer, Integer> tally = new HashMap<>();
+    // Computed fields
+    private Map<Integer, Integer> tally;
+    private Map<Integer, Double> stringLengths;
+    private Map<String, Double> colorLengths;
+    private List<Integer> finalOrder;             // after one loop
     private int repeats;
     private int totalRows;
-    private List<Integer> finalOrder = new ArrayList<>();
-    private Map<Integer, Double> stringLengths = new HashMap<>();
-    private Map<String, Double> colorLengths = new HashMap<>();
     private boolean valid;
 
-    public enum Knot { F, B, FB, BF, UNKNOWN }
+    // Records
+    public record StringInfo( int id, String label, int tally, double length) {}
 
-    // --- Constructors ---
-    public Pattern() { }
+    public record KnotCell(KnotType knot, String label) {}
 
-    public Pattern(String id,
-    			   String url,
-                   Map<Integer, String> colors,
-                   Map<Integer, String> labels,
-                   List<String[]> knotRows,
-                   double desiredBraceletLength,
+    public enum KnotType {F, B, FB, BF, BLANK, UNKNOWN}
+    
+    //pre analysis
+	public Pattern(String id,
+                   String url,
+                   Map<String, String> labelToColor,
+                   List<StringInfo> strings,
+                   List<List<KnotCell>> rows,
+                   double desiredLength,
                    double allowance) {
+
         this.id = id;
         this.url = url;
-        this.colors = colors;
-        this.labels = labels;
-        this.knotRows = knotRows;
-        this.desiredBraceletLength = desiredBraceletLength;
-        this.allowance = allowance;
-    }
+        this.labelToColor = labelToColor;
+        this.strings = strings;
+        this.rows = rows;
 
-    // --- Getters ---
+        this.desiredBraceletLength = desiredLength;
+        this.allowance = allowance;
+
+        this.tally = new LinkedHashMap<>();
+        this.stringLengths = new LinkedHashMap<>();
+        this.colorLengths = new LinkedHashMap<>();
+        this.finalOrder = new ArrayList<>();
+        this.valid = false;
+    }
+	
+	@JsonCreator
+	public Pattern(
+	        @JsonProperty("id") String id,
+	        @JsonProperty("url") String url,
+	        @JsonProperty("desiredBraceletLength") double desiredBraceletLength,
+	        @JsonProperty("allowance") double allowance,
+	        @JsonProperty("strings") List<StringInfo> strings,
+	        @JsonProperty("labelToColor") Map<String, String> labelToColor,
+	        @JsonProperty("rows") List<List<KnotCell>> rows,
+	        @JsonProperty("tally") Map<Integer, Integer> tally,
+	        @JsonProperty("stringLengths") Map<Integer, Double> stringLengths,
+	        @JsonProperty("colorLengths") Map<String, Double> colorLengths,
+	        @JsonProperty("finalOrder") List<Integer> finalOrder,
+	        @JsonProperty("repeats") int repeats,
+	        @JsonProperty("totalRows") int totalRows,
+	        @JsonProperty("valid") boolean valid
+	) {
+	    this.id = id;
+	    this.url = url;
+	    this.desiredBraceletLength = desiredBraceletLength;
+	    this.allowance = allowance;
+	    this.strings = strings;
+	    this.labelToColor = labelToColor;
+	    this.rows = rows;
+	    this.tally = tally;
+	    this.stringLengths = stringLengths;
+	    this.colorLengths = colorLengths;
+	    this.finalOrder = finalOrder;
+	    this.repeats = repeats;
+	    this.totalRows = totalRows;
+	    this.valid = valid;
+	}
+
+
+	// Getters
     public String getId() { return id; }
     public String getUrl() { return url; }
-    public Map<Integer, String> getColors() { return colors; }
-    public Map<Integer, String> getLabels() { return labels; }
-    public List<String[]> getKnotRows() { return knotRows; }
-    public List<List<String[]>> getKnotLabelRows() { return knotLabelRows; }
-    public double getDesiredBraceletLength() { return desiredBraceletLength; }
-    public double getAllowance() { return allowance; }
+    public List<StringInfo> getStrings() { return strings; }
+    public Map<String, String> getLabelToColor() { return labelToColor; }
+    public List<List<KnotCell>> getRows() { return rows; }
+
     public Map<Integer, Integer> getTally() { return tally; }
-    public int getRepeats() { return repeats; }
-    public int getTotalRows() { return totalRows; }
-    public List<Integer> getFinalOrder() { return finalOrder; }
     public Map<Integer, Double> getStringLengths() { return stringLengths; }
     public Map<String, Double> getColorLengths() { return colorLengths; }
+    public List<Integer> getFinalOrder() { return finalOrder; }
+
+    public int getRepeats() { return repeats; }
+    public int getTotalRows() { return totalRows; }
     public boolean isValid() { return valid; }
 
-    // --- Setters (only for inputs/parameters) ---
-    public void setId(String id) { this.id = id; }
-    public void setUrl(String url) { this.url = url; }
-    public void setColors(Map<Integer, String> colors) { this.colors = colors; }
-    public void setLabels(Map<Integer, String> labels) { this.labels = labels; }
-    public void setKnotRows(List<String[]> knotRows) { this.knotRows = knotRows; }
-    public void setKnotLabelRows(List<List<String[]>> knotLabelRows) { this.knotLabelRows = knotLabelRows; }
-    public void setDesiredBraceletLength(double desiredBraceletLength) { this.desiredBraceletLength = desiredBraceletLength; }
+    public double getDesiredBraceletLength() { return desiredBraceletLength; }
+    public double getAllowance() { return allowance; }
+
+    // Setters for computed fields
+    public void setTally(Map<Integer, Integer> tally) { this.tally = tally; }
+    public void setStringLengths(Map<Integer, Double> stringLengths) { this.stringLengths = stringLengths; }
+    public void setColorLengths(Map<String, Double> colorLengths) { this.colorLengths = colorLengths; }
+    public void setFinalOrder(List<Integer> finalOrder) { this.finalOrder = finalOrder; }
+    public void setRepeats(int repeats) { this.repeats = repeats; }
+    public void setTotalRows(int totalRows) { this.totalRows = totalRows; }
+    public void setValid(boolean valid) { this.valid = valid; }
+
+    // User input setters
+    public void setDesiredBraceletLength(double len) { this.desiredBraceletLength = len; }
     public void setAllowance(double allowance) { this.allowance = allowance; }
-
-    // Computed fields should be set only by the analyzer
-    void setTally(Map<Integer, Integer> tally) { this.tally = tally; }
-    void setRepeats(int repeats) { this.repeats = repeats; }
-    void setTotalRows(int totalRows) { this.totalRows = totalRows; }
-    void setFinalOrder(List<Integer> finalOrder) { this.finalOrder = finalOrder; }
-    void setStringLengths(Map<Integer, Double> stringLengths) { this.stringLengths = stringLengths; }
-    void setColorLengths(Map<String, Double> colorLengths) { this.colorLengths = colorLengths; }
-    void setValid(boolean valid) { this.valid = valid; }
-
-    @Override
-    public String toString() {
-        return String.format("Pattern{id=%s, rows=%d, valid=%s, repeats=%d}",
-                id, knotRows != null ? knotRows.size() : 0, valid, repeats);
-    }
 }

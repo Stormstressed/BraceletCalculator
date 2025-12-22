@@ -12,6 +12,7 @@ public class AnsiColor {
     private static final int DARK_THRESHOLD = 80;
     private static final int BRIGHT_TARGET = 80;
 
+    @Deprecated
     public static String format(String text, String hexColor) {
         if (hexColor == null || !hexColor.startsWith(HEX_PREFIX) || hexColor.length() != HEX_LENGTH) {
             return text; // fallback: plain text
@@ -24,7 +25,7 @@ public class AnsiColor {
         String colorCode = String.format(ANSI_FOREGROUND_RGB, r, g, b);
         return colorCode + text + RESET;
     }
-
+    
     public static String brightenIfDark(String hex) {
         try {
             int r = Integer.parseInt(hex.substring(1, 3), 16);

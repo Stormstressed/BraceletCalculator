@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class BraceletApp extends Application {
 
@@ -36,6 +35,15 @@ public class BraceletApp extends Application {
 	private static final int TOAST_TOP_MARGIN = 45;
 	private static final int DEFAULT_KNOT_ROWS = 115;
 	private static final int MAX_KNOT_ROWS = 300;
+    private static final Color DEFAULT_COLOR = Color.web("#dddddd");
+    
+    private static final Map<Pattern.KnotType, String> KNOT_DISPLAY = Map.of(
+            Pattern.KnotType.F, "F ",
+            Pattern.KnotType.B, "B ",
+            Pattern.KnotType.FB, "FB",
+            Pattern.KnotType.BF, "BF",
+            Pattern.KnotType.BLANK, "· "   // or "_", or " ", or whatever you want
+    );
 
 	private Stage stage;
 	private Scene scene;
@@ -61,6 +69,7 @@ public class BraceletApp extends Application {
 
     @Override
     public void start(Stage stage) {
+    	Debug.enabled = true;
         this.stage = stage;
 
         Parent ui = buildUI();
@@ -269,8 +278,11 @@ public class BraceletApp extends Application {
 	        }
 
 	        StringBuilder sb = new StringBuilder();
-	        for (String[] row : currentPattern.getKnotRows()) {
-	            sb.append(String.join(",", row)).append("\n");
+	        for (List<Pattern.KnotCell> row : currentPattern.getRows()) {
+	            for (Pattern.KnotCell cell : row) {
+	                sb.append(cell.knot().name()).append(",");
+	            }
+	            sb.append("\n");
 	        }
 
 	        ClipboardContent content = new ClipboardContent();
@@ -281,39 +293,16 @@ public class BraceletApp extends Application {
 
 	    copyResultsBtn.setOnAction(e -> {
 	        if (currentPattern == null) {
-	        	showToast("Select a pattern first");
-	        	return;
+	            showToast("Select a pattern first");
+	            return;
 	        }
 
-	        StringBuilder sb = new StringBuilder();
-
-	        sb.append("Strings:\n");
-	        currentPattern.getStringLengths().forEach((sid, len) -> {
-	            String label = currentPattern.getLabels().getOrDefault(sid, "");
-	            sb.append("String ").append(sid)
-	              .append(" [").append(label).append("]: ")
-	              .append(String.format("%.1f cm", len))
-	              .append("\n");
-	        });
-
-	        sb.append("\nColors:\n");
-	        currentPattern.getColorLengths().forEach((hex, len) -> {
-	            sb.append(hex).append(": ")
-	              .append(String.format("%.1f cm", len))
-	              .append("\n");
-	        });
-
-	        sb.append("\nFinal order after one loop:\n");
-	        List<Integer> order = currentPattern.getFinalOrder();
-	        for (int id : order) {
-	            String label = currentPattern.getLabels().getOrDefault(id, "");
-	            sb.append(id).append("[").append(label).append("] ");
-	        }
-	        sb.append("\n");
+	        String text = buildResultsText(currentPattern);
 
 	        ClipboardContent content = new ClipboardContent();
-	        content.putString(sb.toString());
+	        content.putString(text);
 	        Clipboard.getSystemClipboard().setContent(content);
+
 	        showToast("Strings length copied!");
 	    });
 	    
@@ -416,11 +405,9 @@ public class BraceletApp extends Application {
 
     //changes both textflows
     private void displayPattern(Pattern pattern) {
-    	patternFlow.getChildren().clear();
+        patternFlow.getChildren().clear();
         resultsFlow.getChildren().clear();
 
-        List<List<String[]>> knotLabelRows = pattern.getKnotLabelRows();
-        
         int targetRows;
         try {
             targetRows = Integer.parseInt(knotCountField.getText());
@@ -430,92 +417,106 @@ public class BraceletApp extends Application {
             targetRows = 100;
         }
 
+        List<List<Pattern.KnotCell>> rows = pattern.getRows();
+
+        //patternflow loop
         for (int rowIndex = 0; rowIndex < targetRows; rowIndex++) {
-            List<String[]> row = knotLabelRows.get(rowIndex % knotLabelRows.size());
+            List<Pattern.KnotCell> row = rows.get(rowIndex % rows.size());
 
-            for (String[] cell : row) {
-                String knotType = cell[0];
-                String label    = cell[1];
+            for (Pattern.KnotCell cell : row) {
+                String label    = cell.label();   // "a", "b", ..., or "0"
 
-                // lookup color by label → string id → hex
-                int sid = pattern.getLabels().entrySet().stream()
-                        .filter(e -> Objects.equals(e.getValue(), label))
-                        .map(Map.Entry::getKey)
-                        .findFirst().orElse(-1);
+                String hex = (label == null) ? null : pattern.getLabelToColor().get(label);
+                if (hex == null) hex = "#dddddd";
 
-                String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
-                String hex = AnsiColor.brightenIfDark(rawHex);
+                Color fxColor = showColors
+                        ? Color.web(AnsiColor.brightenIfDark(hex))
+                        : DEFAULT_COLOR;
 
-                // pad single-letter knot codes
-                String display = (knotType.length() == 1) ? knotType + " " : knotType;
+                String display = KNOT_DISPLAY.getOrDefault(cell.knot(), "?");
 
-                // colored Text for display
                 Text t = new Text(display + " ");
-                t.setFill(showColors ? Color.web(hex) : Color.web("#dddddd"));
+                t.setFill(fxColor);
                 patternFlow.getChildren().add(t);
-
             }
 
             patternFlow.getChildren().add(new Text("\n"));
         }
 
+        String results = buildResultsText(pattern);
 
-        // Results
-        appendTitle(resultsFlow, "Strings:");
-        pattern.getStringLengths().forEach((sid, len) -> {
-            String label = pattern.getLabels().getOrDefault(sid, "");
-            String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
-            String hex = AnsiColor.brightenIfDark(rawHex);
-            String line = String.format("String %d [%s] %s: %.1f cm", sid, label, hex, len);
-            appendLine(resultsFlow, line, showColors ? Color.web(hex) : Color.web("#dddddd"));
-        });
+        for (String line : results.split("\n")) {
+            Text t = new Text(line + "\n");
 
-        resultsFlow.getChildren().add(new Text("\n"));
-        appendTitle(resultsFlow, "Totals per color:");
-        pattern.getColorLengths().forEach((rawHex, total) -> {
-            String hex = AnsiColor.brightenIfDark(rawHex);
-            String line = String.format("%s: %.1f cm", hex, total);
-            appendLine(resultsFlow, line, showColors ? Color.web(hex) : Color.web("#dddddd"));
-        });
+            // Extract hex if present
+            String trimmed = line.trim();
+            Color fxColor = DEFAULT_COLOR;
 
-        resultsFlow.getChildren().add(new Text("\n"));
-        appendTitle(resultsFlow, "Final order:");
-        for (int sid : pattern.getFinalOrder()) {
-            String label = pattern.getLabels().getOrDefault(sid, "");
-            String rawHex = pattern.getColors().getOrDefault(sid, "#cccccc");
-            String hex = AnsiColor.brightenIfDark(rawHex);
-            String line = String.format("String %d [%s]", sid, label);
-            appendLine(resultsFlow, line, showColors ? Color.web(hex) : Color.web("#dddddd"));
+            int idx = trimmed.indexOf('#');
+            if (idx != -1) {
+                String hex = trimmed.substring(idx, Math.min(idx + 7, trimmed.length()));
+                if (hex.matches("#[0-9a-fA-F]{6}")) {
+                    fxColor = Color.web(AnsiColor.brightenIfDark(hex));
+                }
+            }
+
+            t.setFill(fxColor);
+            resultsFlow.getChildren().add(t);
         }
     }
-    
-    private void applyKnotCount() {
-        if (currentPattern == null) return;
 
-        int count;
-        try {
-            count = Integer.parseInt(knotCountField.getText());
-        } catch (NumberFormatException e) {
-            count = DEFAULT_KNOT_ROWS;
+    private String buildResultsText(Pattern p) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Strings:\n");
+        p.getStringLengths().forEach((sid, len) -> {
+            String label = p.getStrings().get(sid - 1).label();
+            String hex   = p.getLabelToColor().get(label);
+
+            sb.append("String ").append(sid)
+              .append(" [").append(label).append("] ");
+
+            if (hex != null) {
+                sb.append(hex).append(" ");
+            }
+
+            sb.append(String.format("%.1f cm", len)).append("\n");
+        });
+
+        sb.append("\nColors:\n");
+        p.getColorLengths().forEach((hex, len) -> {
+            sb.append(hex).append(": ")
+              .append(String.format("%.1f cm", len))
+              .append("\n");
+        });
+        
+        int rowsPerLoop = (p.getRepeats() > 0)
+                ? p.getTotalRows() / p.getRepeats()
+                : p.getTotalRows();
+        sb.append("\nPattern info:\n");
+        sb.append("Number of rows: ").append(rowsPerLoop).append("\n");
+        sb.append("Number of repeats needed for a perfect pattern: ").append(p.getRepeats()).append("\n");
+        sb.append("Number of knot rows until repeat: ").append(p.getTotalRows()).append("\n");
+
+        sb.append("\nFinal order after one loop:\n");
+
+        int count = 0;
+        for (int sid : p.getFinalOrder()) {
+            String label = p.getStrings().get(sid - 1).label();
+            sb.append(sid).append("[").append(label).append("] ");
+
+            count++;
+            if (count % 5 == 0) {
+                sb.append("\n");
+            }
         }
 
-        if (count < 1) count = 1;
-        if (count > MAX_KNOT_ROWS) count = MAX_KNOT_ROWS;
-
-        knotCountField.setText(String.valueOf(count));
-        displayPattern(currentPattern);
-    }
-    
-    private void appendTitle(TextFlow flow, String text) {
-        Text t = new Text(text + "\n");
-        t.getStyleClass().add("results-title");
-        flow.getChildren().add(t);
-    }
-
-    private void appendLine(TextFlow flow, String text, Color color) {
-        Text t = new Text(text + "\n");
-        t.setFill(color);
-        flow.getChildren().add(t);
+        // Ensure trailing newline
+        if (count % 5 != 0) {
+            sb.append("\n");
+        }
+        
+        return sb.toString();
     }
 
     private void setStatus(String state) {
@@ -541,6 +542,24 @@ public class BraceletApp extends Application {
                 break;
         }
     }
+    
+    //for the number of knots input
+    private void applyKnotCount() {
+        if (currentPattern == null) return;
+
+        int count;
+        try {
+            count = Integer.parseInt(knotCountField.getText());
+        } catch (NumberFormatException e) {
+            count = DEFAULT_KNOT_ROWS;
+        }
+
+        if (count < 1) count = 1;
+        if (count > MAX_KNOT_ROWS) count = MAX_KNOT_ROWS;
+
+        knotCountField.setText(String.valueOf(count));
+        displayPattern(currentPattern);
+    }
 
     private void refreshSavedIds() {
         allIds = new ArrayList<>(PatternStorage.getSavedIds());
@@ -554,7 +573,6 @@ public class BraceletApp extends Application {
         });
     }
 
-    
     private void showToast(String message) {
         Label toast = new Label(message);
         toast.getStyleClass().add("toast");
