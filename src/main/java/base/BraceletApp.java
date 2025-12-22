@@ -79,7 +79,7 @@ public class BraceletApp extends Application {
 
     @Override
     public void start(Stage stage) {
-    	Debug.enabled = true;
+    	//Debug.enabled = true;
         this.stage = stage;
 
         Parent ui = buildUI();
@@ -403,11 +403,11 @@ public class BraceletApp extends Application {
 
         task.setOnSucceeded(ev -> {
             currentPattern = task.getValue();
+            knotCountField.setText(String.valueOf(DEFAULT_KNOT_ROWS));
             displayPattern(currentPattern);
             setStatus("ok");
             refreshSavedIds();
 
-            knotCountField.setText(String.valueOf(DEFAULT_KNOT_ROWS));
             allowanceField.setText(String.valueOf(currentPattern.getAllowance()));
             lengthField.setText(String.valueOf(currentPattern.getDesiredBraceletLength()));
             searchField.setText(currentPattern.getId());
