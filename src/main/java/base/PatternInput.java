@@ -3,6 +3,7 @@ package base;
 import java.util.*;
 
 public class PatternInput {
+	/*
     public static Pattern fromConsole(Scanner scanner, double desiredLength, double allowance) {
         List<String[]> rows = new ArrayList<>();
         System.out.println("\nPaste the pattern row by row (comma separated knots). End with empty line:");
@@ -84,5 +85,5 @@ public class PatternInput {
         }
         return colorMap;
     }
-
+	*/
 }
