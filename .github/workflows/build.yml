@@ -1,4 +1,4 @@
-name: Build Windows Portable App
+name: Build Portable Apps
 
 on:
   push:
@@ -9,6 +9,7 @@ permissions:
   contents: write
 
 jobs:
+
   build-windows:
     runs-on: windows-latest
 
@@ -34,7 +35,7 @@ jobs:
           tar -xf javafx-jmods.zip
           ren javafx-jmods-21.0.9 javafx-jmods
 
-      - name: Build with Maven (shaded JAR)
+      - name: Build with Maven
         run: mvn -B package
 
       - name: Create portable app with jpackage
@@ -49,10 +50,107 @@ jobs:
           --dest dist
 
       - name: Zip portable app
-        run: |
-          powershell Compress-Archive -Path dist/BraceletCalculator -DestinationPath BraceletCalculator.zip
+        run: powershell Compress-Archive -Path dist/BraceletCalculator -DestinationPath BraceletCalculator-windows.zip
 
       - name: Upload ZIP to release
         uses: softprops/action-gh-release@v1
         with:
-          files: BraceletCalculator.zip
+          files: BraceletCalculator-windows.zip
+
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install system dependencies for jpackage
+        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm
+
+      - name: Download JavaFX SDK (Linux)
+        run: |
+          curl -L -o javafx.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_linux-x64_bin-sdk.zip
+          unzip javafx.zip
+          mv javafx-sdk-21.0.9 javafx-sdk
+
+      - name: Download JavaFX jmods (Linux)
+        run: |
+          curl -L -o javafx-jmods.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_linux-x64_bin-jmods.zip
+          unzip javafx-jmods.zip
+          mv javafx-jmods-21.0.9 javafx-jmods
+
+      - name: Build with Maven
+        run: mvn -B package
+
+      - name: Create portable app with jpackage
+        run: |
+          jpackage --type app-image --name BraceletCalculator \
+            --input target \
+            --main-jar BraceletCalculator.jar \
+            --main-class base.BraceletApp \
+            --module-path "$JAVA_HOME/jmods:javafx-jmods" \
+            --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,java.base,jdk.crypto.ec \
+            --dest dist
+
+      - name: Zip portable app
+        run: zip -r BraceletCalculator-linux.zip dist/BraceletCalculator
+
+      - name: Upload ZIP to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: BraceletCalculator-linux.zip
+
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download JavaFX SDK (macOS)
+        run: |
+          curl -L -o javafx.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_osx-x64_bin-sdk.zip
+          unzip javafx.zip
+          mv javafx-sdk-21.0.9 javafx-sdk
+
+      - name: Download JavaFX jmods (macOS)
+        run: |
+          curl -L -o javafx-jmods.zip https://download2.gluonhq.com/openjfx/21.0.9/openjfx-21.0.9_osx-x64_bin-jmods.zip
+          unzip javafx-jmods.zip
+          mv javafx-jmods-21.0.9 javafx-jmods
+
+      - name: Build with Maven
+        run: mvn -B package
+
+      - name: Create portable app with jpackage
+        run: |
+          jpackage --type app-image --name BraceletCalculator \
+            --input target \
+            --main-jar BraceletCalculator.jar \
+            --main-class base.BraceletApp \
+            --module-path "$JAVA_HOME/jmods:javafx-jmods" \
+            --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base,java.base,jdk.crypto.ec \
+            --icon src/main/resources/icon.icns \
+            --dest dist
+
+      - name: Zip portable app
+        run: zip -r BraceletCalculator-macos.zip dist/BraceletCalculator.app
+
+      - name: Upload ZIP to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: BraceletCalculator-macos.zip
