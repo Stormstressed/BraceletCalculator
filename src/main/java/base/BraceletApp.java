@@ -53,6 +53,14 @@ public class BraceletApp extends Application {
             Pattern.KnotType.BLANK,  "◇"
     );
 
+    private static final Map<Pattern.KnotType, String> ARROW_SYMBOLS = Map.of(
+            Pattern.KnotType.F,      "↘",
+            Pattern.KnotType.B,      "↙",
+            Pattern.KnotType.FB,     "⤸",
+            Pattern.KnotType.BF,     "⤹",
+            Pattern.KnotType.BLANK,  "┆"
+    );
+
 	private Stage stage;
 	private Scene scene;
     private TextFlow patternFlow;
@@ -66,7 +74,7 @@ public class BraceletApp extends Application {
     private Button copyResultsBtn;
     private Button deleteBtn;
     Button toggleSymbolsBtn;
-    private boolean useDiamondSymbols = true;
+    private int knotSymbolType = 0;
     
     //search id
     private TextField searchField;
@@ -187,8 +195,15 @@ public class BraceletApp extends Application {
 	    loadBtn.setOnAction(e -> handleLoad());
 	    
 	    toggleSymbolsBtn.setOnAction(e -> {
-	        useDiamondSymbols = !useDiamondSymbols;
-	        toggleSymbolsBtn.setText(useDiamondSymbols ? "Diamonds" : "Text");
+	        knotSymbolType = (knotSymbolType + 1) % 3;
+
+            switch(knotSymbolType) {
+                case 0 -> toggleSymbolsBtn.setText("Diamonds");
+                case 1 -> toggleSymbolsBtn.setText("Text");
+                case 2 -> toggleSymbolsBtn.setText("Arrows");
+                default -> toggleSymbolsBtn.setText("Ya done messed up");
+            }
+
 	        if (currentPattern != null) {
 	            displayPattern(currentPattern);
 	        }
@@ -473,7 +488,12 @@ public class BraceletApp extends Application {
                             ? Color.web(AnsiColor.brightenIfDark(hex))
                             : DEFAULT_COLOR;
 
-                    Map<Pattern.KnotType, String> activeMap = useDiamondSymbols ? DIAMOND_SYMBOLS : TEXT_SYMBOLS;
+                    // choose symbol type
+                    Map<Pattern.KnotType, String> activeMap = switch(knotSymbolType) {
+                        case 1 -> TEXT_SYMBOLS;
+                        case 2 -> ARROW_SYMBOLS;
+                        default -> DIAMOND_SYMBOLS;
+                    };
 
                     String display = activeMap.getOrDefault(cell.knot(), "?") + " ";
 
@@ -507,8 +527,12 @@ public class BraceletApp extends Application {
                         ? Color.web(AnsiColor.brightenIfDark(hex))
                         : DEFAULT_COLOR;
 
-                Map<Pattern.KnotType, String> activeMap =
-                        useDiamondSymbols ? DIAMOND_SYMBOLS : TEXT_SYMBOLS;
+                // choose symbol type
+                Map<Pattern.KnotType, String> activeMap = switch(knotSymbolType) {
+                    case 1 -> TEXT_SYMBOLS;
+                    case 2 -> ARROW_SYMBOLS;
+                    default -> DIAMOND_SYMBOLS;
+                };
 
                 String display = activeMap.getOrDefault(cell.knot(), "?") + " ";
 
